@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "next lint",
     "vercel:preview": "vercel",
-    "vercel:prod": "vercel --prod"
+    "vercel:prod": "vercel --prod",
+    "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",

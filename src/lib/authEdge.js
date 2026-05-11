@@ -1,8 +1,9 @@
 import { supabase } from './supabase.js'
 import { GENERIC_AUTH_ERROR } from './validators.js'
+import { getSupabasePublicKey } from './supabaseEnv.js'
 
 const baseUrl = () => String(process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
-const anonKey = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const anonKey = () => getSupabasePublicKey()
 
 function headers() {
   const key = anonKey()

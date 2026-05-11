@@ -8,7 +8,7 @@ alwaysApply: true
 ## Stack & boundaries
 - **Frontend:** React 18, **Next.js 15** App Router (`src/app/`), feature UI in `src/views/` (not `src/pages/` — reserved by Next) and `src/components/`, jsPDF invoices in `src/utils/pdfGenerator.js`.
 - **Data/auth:** Supabase client in `src/lib/supabase.js`; data access rules in `supabase/schema.sql` (**RLS** is the real enforcement).
-- **Client env:** Only **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** (see README § Configure environment). Optional: **`NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS`**, **`NEXT_PUBLIC_PREVIEW_DASHBOARD`** (dev). Never put **service_role**, DB passwords, or other secrets in the repo or client bundle.
+- **Client env:** **`NEXT_PUBLIC_SUPABASE_URL`** plus **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** (legacy JWT) *or* **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`** (see README § Configure environment). Optional: **`NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS`**, **`NEXT_PUBLIC_PREVIEW_DASHBOARD`** (dev). Never put **service_role**, DB passwords, or other secrets in the repo or client bundle.
 - **Code style:** **JavaScript / JSX** only (no TypeScript in this repo unless you add it). UI in `components/` and `views/`; Supabase calls in `hooks/` and `lib/`; keep PDF logic in the PDF util.
 
 ## Where things live (quick map)

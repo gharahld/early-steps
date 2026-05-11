@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabasePublicKey } from './supabaseEnv.js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseKey = getSupabasePublicKey()
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
-    'Missing Supabase env vars. Create .env.local with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (see README).'
+    'Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL plus either NEXT_PUBLIC_SUPABASE_ANON_KEY (legacy JWT) or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (see README).',
   )
 }
 

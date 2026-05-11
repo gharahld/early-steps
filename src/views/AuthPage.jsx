@@ -141,10 +141,10 @@ export function AuthPage() {
                 borderRadius: '8px', padding: '12px 14px', marginBottom: '20px',
                 fontSize: '13px', color: T.success,
               }}>
-                <div style={{ fontWeight: '700', marginBottom: '6px' }}>Check your email</div>
+                <div style={{ fontWeight: '700', marginBottom: '6px' }}>Account created — check your email</div>
                 <div style={{ lineHeight: 1.5 }}>
                   We sent a confirmation link to <strong>{pendingEmailVerification}</strong>.
-                  After you confirm, use <strong>Sign in</strong> below.
+                  After you tap the link, return here and use <strong>Sign in</strong> with the same email and password.
                 </div>
                 <button
                   type="button"
@@ -170,8 +170,8 @@ export function AuthPage() {
               </div>
             )}
 
-            {/* Global error */}
-            {globalError && !locked && !pendingEmailVerification && (
+            {/* Global error (show even if “check email” is visible — e.g. login after signup) */}
+            {globalError && !locked && (
               <div role="alert" style={{
                 background: T.dangerBg, border: `1px solid ${T.dangerBorder}`,
                 borderRadius: '8px', padding: '10px 14px', marginBottom: '20px',

@@ -73,9 +73,20 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
-      setUser(session?.user ?? null)
+      // Never clobber a signed-in user with null from unrelated events (race after SIGNED_IN).
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setUser(null)
+        return
+      }
+      if (session?.user) {
+        setUser(session.user)
+        return
+      }
+      if (event === 'INITIAL_SESSION') {
+        setUser(null)
+      }
     })
 
     return () => {
@@ -117,11 +128,17 @@ export function AuthProvider({ children }) {
 
       if (error) {
         rateLimiter.consume(key)
+        const raw = (error.message || '').toLowerCase()
+        if (raw.includes('email not confirmed') || raw.includes('email_not_confirmed')) {
+          throw new Error(
+            'Confirm your email using the link we sent, then sign in. If you did not get an email, check spam or request a new link from Sign up again.',
+          )
+        }
         throw new Error(GENERIC_AUTH_ERROR)
       }
 
       rateLimiter.reset(key)
-      setUser(data.user)
+      setUser(data.session?.user ?? data.user ?? null)
     } finally {
       setLoading(false)
     }
@@ -178,7 +195,9 @@ export function AuthProvider({ children }) {
         return
       }
       setUser(null)
-      setPendingEmailVerification(data.user?.email ?? emailClean)
+      setPendingEmailVerification(
+        data.user?.email ?? data.user?.new_email ?? emailClean,
+      )
     } finally {
       setLoading(false)
     }

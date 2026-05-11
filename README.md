@@ -92,13 +92,28 @@ If you **keep** confirmation enabled: set **Authentication** → **URL Configura
 
 **Signup fails with a database error:** If you applied an older `schema.sql`, the `handle_new_user` trigger could fail because **RLS on `providers`** checks `auth.uid()`, which is **null** inside the auth trigger—so the provider row never inserts and signup rolls back. Re-run the **`handle_new_user`** definition from the current `supabase/schema.sql` (or migration `supabase/migrations/20260509140000_fix_providers_trigger_rls.sql`) in the SQL Editor.
 
+**Sign up then can’t sign in:** If **Confirm email** is on in Supabase, you must open the link in the email before password sign-in works. The app shows **Account created — check your email** after sign-up; then use **Sign in** with the same email and password. If sign-in still fails, confirm **Site URL** and **Redirect URLs** in Supabase include your app origin (e.g. `http://localhost:3000`). If auth behaves oddly with the newer **publishable** key, try the legacy **JWT anon** key in `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead.
+
 ### 3. Configure environment
 
-Create **`.env.local`** in the project root (it is gitignored). Only **`NEXT_PUBLIC_*`** values are exposed to the browser:
+Create **`.env.local`** in the project root (it is gitignored).
+
+**Why `NEXT_PUBLIC_`?** That prefix is **Next.js** (not Supabase). It marks variables that may be used in the browser bundle. The **values** still come from Supabase → **Settings → API**.
+
+**Required:**
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Public key — use one of these** (Supabase shows one or both in the API settings):
+
+```
+# Legacy JWT “anon” / “public” key (starts with eyJ…)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+
+# Or newer publishable key (starts with sb_publishable_…)
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 Optional (same file):
@@ -112,7 +127,17 @@ Optional (same file):
 
 If you previously used Vite, rename **`VITE_*`** → **`NEXT_PUBLIC_*`**.
 
-### 4. Run the dev server
+### 4. Test Supabase from the CLI
+
+After `.env.local` is filled in:
+
+```bash
+npm run check:supabase
+```
+
+This verifies the **URL + public key** and that the **`providers`** table exists (from `schema.sql`). It does not print secrets.
+
+### 5. Run the dev server
 
 ```bash
 npm run dev
@@ -130,7 +155,7 @@ NEXT_PUBLIC_PREVIEW_DASHBOARD=true
 
 Restart `npm run dev`. The app opens as a **mock provider** so you can inspect dashboard and invoice UI (and performance) without Supabase auth. Saving invoices still requires a real project + login — remove this variable or set it to `false` when you want to test the login flow.
 
-### 5. (Recommended for production) Server-side auth rate limits
+### 6. (Recommended for production) Server-side auth rate limits
 
 The UI still applies a **client-side** lockout for responsiveness. To enforce **the same limits on the server** (so clearing storage or switching browsers does not reset the window):
 
@@ -162,7 +187,7 @@ The UI still applies a **client-side** lockout for responsiveness. To enforce **
 - **5 failed attempts per email per 15-minute window** before lockout (same window for client UX and optional Edge enforcement)
 - **Live countdown** shown to the user (client-side UX)
 - **Separate buckets** for login vs signup attempts
-- **Optional server-side enforcement** — deploy `auth-rate-limited-signin` / `auth-rate-limited-signup` and set `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true` (see Quick Start §5). For multi-region or very high volume, consider adding Redis-backed counters later.
+- **Optional server-side enforcement** — deploy `auth-rate-limited-signin` / `auth-rate-limited-signup` and set `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true` (see Quick Start §6). For multi-region or very high volume, consider adding Redis-backed counters later.
 
 ### Password reset
 - **Forgot password** — `/forgot-password` sends `resetPasswordForEmail` with `redirectTo` …`/auth/update-password` (same generic messaging whether the email exists).
@@ -202,7 +227,7 @@ Vercel runs **`next build`** for this repo. **`vercel.json`** sets `framework: n
 3. Leave **Framework Preset** as **Next.js**, **Root Directory** as **`.`**, build/output commands as defaults (Vercel will run `npm run build`).
 4. Expand **Environment Variables** and add (same names as **§3 Configure environment**):
    - `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL  
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase **anon** key (never the service role)  
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` **or** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — whichever Supabase shows under API (never the service role)  
    - Optional: `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS` = `true` if Edge auth is deployed  
    Apply to **Production** and **Preview** (and **Development** if you use Vercel’s dev integration) so preview deployments can call Supabase.
 5. Click **Deploy**. After the first deploy, open **Domains** and note your production URL (and `*.vercel.app` preview URLs).
