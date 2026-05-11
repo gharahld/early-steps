@@ -53,11 +53,13 @@ export async function signInViaEdge(email, password) {
     throw new Error(GENERIC_AUTH_ERROR)
   }
 
-  const { error } = await supabase.auth.setSession({
+  const { data, error } = await supabase.auth.setSession({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
   })
   if (error) throw new Error(GENERIC_AUTH_ERROR)
+  // Return the session Supabase just set — `getSession()` right after can still be null briefly.
+  return data ?? null
 }
 
 /**

@@ -8,17 +8,11 @@ import {
   GENERIC_AUTH_ERROR,
   safeSignupErrorMessage,
 } from '../lib/validators.js'
-import { PREVIEW_USER } from '../lib/devPreviewUser.js'
 
 const AuthCtx = createContext(null)
 
 /** Server-side rate limits via Supabase Edge Functions (opt-in — see README). */
 const AUTH_VIA_EDGE = process.env.NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS === 'true'
-
-/** Dev-only: skip login to inspect dashboard/invoice UI (no real Supabase session). */
-const PREVIEW_DASHBOARD =
-  process.env.NODE_ENV === 'development' &&
-  process.env.NEXT_PUBLIC_PREVIEW_DASHBOARD === 'true'
 
 /** 30-minute inactivity timeout (milliseconds). */
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000
@@ -28,15 +22,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)  // true while resolving initial session
   /** Set when signUp succeeds but there is no session yet (email confirmation required). */
   const [pendingEmailVerification, setPendingEmailVerification] = useState(null)
-  /** After Log out in preview mode, show real login until page refresh. */
-  const [previewDismissed, setPreviewDismissed] = useState(false)
 
   const activityTimer = useRef(null)
-
-  const isPreviewMode =
-    PREVIEW_DASHBOARD &&
-    !previewDismissed &&
-    user?.user_metadata?.__preview === true
+  /** Once true, ignore stale `getSession()` resolves that would overwrite a fresh login. */
+  const initialAuthHydrated = useRef(false)
 
   // ── Activity-based session expiry ─────────────────────────────────────────
   const resetActivityTimer = useCallback(() => {
@@ -48,7 +37,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!user || isPreviewMode) return
+    if (!user) return
     const events = ['mousemove', 'keydown', 'click', 'touchstart']
     events.forEach(e => window.addEventListener(e, resetActivityTimer, { passive: true }))
     resetActivityTimer()
@@ -56,36 +45,34 @@ export function AuthProvider({ children }) {
       clearTimeout(activityTimer.current)
       events.forEach(e => window.removeEventListener(e, resetActivityTimer))
     }
-  }, [user, resetActivityTimer, isPreviewMode])
+  }, [user, resetActivityTimer])
 
   // ── Resolve existing session on mount ────────────────────────────────────
   useEffect(() => {
-    if (PREVIEW_DASHBOARD && !previewDismissed) {
-      setUser(PREVIEW_USER)
-      setLoading(false)
-      return
-    }
+    initialAuthHydrated.current = false
 
     let cancelled = false
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return
-      setUser(session?.user ?? null)
+      // Login may finish before this resolves; do not overwrite a user already set.
+      if (!initialAuthHydrated.current) {
+        initialAuthHydrated.current = true
+        setUser(session?.user ?? null)
+      } else if (session?.user) {
+        setUser(session.user)
+      }
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
-      // Never clobber a signed-in user with null from unrelated events (race after SIGNED_IN).
       if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setUser(null)
         return
       }
       if (session?.user) {
+        initialAuthHydrated.current = true
         setUser(session.user)
-        return
-      }
-      if (event === 'INITIAL_SESSION') {
-        setUser(null)
       }
     })
 
@@ -93,7 +80,7 @@ export function AuthProvider({ children }) {
       cancelled = true
       subscription.unsubscribe()
     }
-  }, [previewDismissed])
+  }, [])
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (email, password) => {
@@ -110,14 +97,19 @@ export function AuthProvider({ children }) {
 
       if (AUTH_VIA_EDGE) {
         try {
-          await signInViaEdge(emailClean, password)
+          const setData = await signInViaEdge(emailClean, password)
+          rateLimiter.reset(key)
+          initialAuthHydrated.current = true
+          const resolved =
+            setData?.session?.user ??
+            setData?.user ??
+            (await supabase.auth.getSession()).data.session?.user ??
+            null
+          setUser(resolved)
         } catch (err) {
           rateLimiter.consume(key)
           throw err
         }
-        rateLimiter.reset(key)
-        const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
         return
       }
 
@@ -138,7 +130,13 @@ export function AuthProvider({ children }) {
       }
 
       rateLimiter.reset(key)
-      setUser(data.session?.user ?? data.user ?? null)
+      initialAuthHydrated.current = true
+      const resolved =
+        data.session?.user ??
+        data.user ??
+        (await supabase.auth.getSession()).data.session?.user ??
+        null
+      setUser(resolved)
     } finally {
       setLoading(false)
     }
@@ -162,6 +160,7 @@ export function AuthProvider({ children }) {
         try {
           const { user: newUser } = await signUpViaEdge(emailClean, password, nameClean)
           rateLimiter.reset(key)
+          initialAuthHydrated.current = true
           const { data: { session } } = await supabase.auth.getSession()
           if (session?.user) {
             setUser(session.user)
@@ -191,6 +190,7 @@ export function AuthProvider({ children }) {
 
       rateLimiter.reset(key)
       if (data.session?.user) {
+        initialAuthHydrated.current = true
         setUser(data.session.user)
         return
       }
@@ -207,14 +207,9 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     clearTimeout(activityTimer.current)
     setPendingEmailVerification(null)
-    if (isPreviewMode) {
-      setPreviewDismissed(true)
-      setUser(null)
-      return
-    }
     await supabase.auth.signOut()
     setUser(null)
-  }, [isPreviewMode])
+  }, [])
 
   const dismissPendingEmailVerification = useCallback(() => {
     setPendingEmailVerification(null)
@@ -230,7 +225,6 @@ export function AuthProvider({ children }) {
         logout,
         pendingEmailVerification,
         dismissPendingEmailVerification,
-        isPreviewMode,
       }}
     >
       {children}

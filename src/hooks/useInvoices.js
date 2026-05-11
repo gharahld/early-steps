@@ -7,19 +7,13 @@ import { useAuth } from '../context/AuthContext.jsx'
  * Row-Level Security in Supabase ensures users can only access their own data.
  */
 export function useInvoices() {
-  const { user, isPreviewMode } = useAuth()
+  const { user } = useAuth()
   const [invoices, setInvoices] = useState([])
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState(null)
 
   const fetchInvoices = useCallback(async () => {
     if (!user) return
-    if (isPreviewMode) {
-      setInvoices([])
-      setError(null)
-      setLoading(false)
-      return
-    }
     setLoading(true); setError(null)
     try {
       const { data, error } = await supabase
@@ -34,14 +28,13 @@ export function useInvoices() {
     } finally {
       setLoading(false)
     }
-  }, [user, isPreviewMode])
+  }, [user])
 
   useEffect(() => { fetchInvoices() }, [fetchInvoices])
 
   // ── Save or update a log + its entries ───────────────────────────────────
   const saveInvoice = useCallback(async ({ id, header, entries, status = 'draft' }) => {
     if (!user) throw new Error('Not authenticated')
-    if (isPreviewMode) throw new Error('Preview mode — connect Supabase to save invoices.')
 
     const logPayload = {
       provider_id:         user.id,
@@ -97,7 +90,7 @@ export function useInvoices() {
 
     await fetchInvoices() // refresh list
     return log
-  }, [user, fetchInvoices, isPreviewMode])
+  }, [user, fetchInvoices])
 
   return { invoices, loading, error, saveInvoice, refetch: fetchInvoices }
 }

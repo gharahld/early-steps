@@ -4,7 +4,7 @@ import { useInvoices } from '../hooks/useInvoices.js'
 import { Button, Badge, Card, CardHeader, T } from '../components/ui/index.jsx'
 
 export function Dashboard({ onNewInvoice, onOpenInvoice }) {
-  const { user, logout, isPreviewMode } = useAuth()
+  const { user, logout } = useAuth()
   const { invoices, loading, error } = useInvoices()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
@@ -21,17 +21,6 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-
-      {isPreviewMode && (
-        <div role="status" style={{
-          background: T.warningBg, borderBottom: `1px solid ${T.warningBorder}`,
-          padding: '10px 28px', fontSize: '13px', color: T.warning, lineHeight: 1.45,
-        }}>
-          <strong>Preview mode</strong> — mock user, no database. Set{' '}
-          <code style={{ fontSize: '12px' }}>NEXT_PUBLIC_PREVIEW_DASHBOARD=false</code> or remove it from{' '}
-          <code style={{ fontSize: '12px' }}>.env.local</code>, restart dev, then sign in for real data.
-        </div>
-      )}
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div style={{

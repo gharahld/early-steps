@@ -120,7 +120,6 @@ Optional (same file):
 
 ```
 # NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true
-# NEXT_PUBLIC_PREVIEW_DASHBOARD=true
 ```
 
 **Git:** do not commit `.env.local` or any `.env*` file. Keep secrets in Vercel/hosting env or local files only.
@@ -144,16 +143,6 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
-
-### Preview the dashboard without signing in (dev only)
-
-Add to `.env.local`:
-
-```
-NEXT_PUBLIC_PREVIEW_DASHBOARD=true
-```
-
-Restart `npm run dev`. The app opens as a **mock provider** so you can inspect dashboard and invoice UI (and performance) without Supabase auth. Saving invoices still requires a real project + login — remove this variable or set it to `false` when you want to test the login flow.
 
 ### 6. (Recommended for production) Server-side auth rate limits
 
