@@ -13,10 +13,10 @@ build/
 # Turbopack (if enabled)
 .turbo/
 
-# Environment — NEVER commit secrets (allow only the template)
+# Environment — never commit any env file (create .env.local locally; see README)
 .env
 .env.*
-!.env.example
+.env.example
 
 # Debug & package manager logs
 npm-debug.log*

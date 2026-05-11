@@ -54,7 +54,6 @@ early-steps/
 │   └── functions/
 │       ├── auth-rate-limited-signin/
 │       └── auth-rate-limited-signup/
-├── .env.example                  # Required environment variables (NEXT_PUBLIC_*)
 ├── .gitignore
 ├── next.config.mjs
 ├── package.json
@@ -95,20 +94,23 @@ If you **keep** confirmation enabled: set **Authentication** → **URL Configura
 
 ### 3. Configure environment
 
-```bash
-cp .env.example .env.local
-```
-
-**Git:** `.gitignore` excludes every `.env*` file except **`.env.example`**. Do not force-add `.env.local` or other env files; keep secrets in Vercel/hosting env or local files only.
-
-Edit `.env.local` (only **`NEXT_PUBLIC_*`** values are exposed to the browser):
+Create **`.env.local`** in the project root (it is gitignored). Only **`NEXT_PUBLIC_*`** values are exposed to the browser:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-If you previously used Vite, rename **`VITE_*`** → **`NEXT_PUBLIC_*`** as in `.env.example`.
+Optional (same file):
+
+```
+# NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true
+# NEXT_PUBLIC_PREVIEW_DASHBOARD=true
+```
+
+**Git:** do not commit `.env.local` or any `.env*` file. Keep secrets in Vercel/hosting env or local files only.
+
+If you previously used Vite, rename **`VITE_*`** → **`NEXT_PUBLIC_*`**.
 
 ### 4. Run the dev server
 
@@ -194,7 +196,7 @@ The UI still applies a **client-side** lockout for responsiveness. To enforce **
 Vercel **auto-detects Next.js** (`next build`). `vercel.json` pins `npm ci` for installs and adds security + long-cache headers for `/_next/static/*`.
 
 1. Push the repo to GitHub (or GitLab / Bitbucket) and **Import** it in the [Vercel dashboard](https://vercel.com/new).
-2. **Environment variables:** add the same names as `.env.example`. `NEXT_PUBLIC_*` are inlined at **build** time—set them for **Production** and **Preview** as needed.
+2. **Environment variables:** add the **`NEXT_PUBLIC_*`** names from **§3 Configure environment**. They are inlined at **build** time—set them for **Production** and **Preview** as needed.
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - Optional: `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true` if Edge auth functions are deployed.
 3. Deploy.
