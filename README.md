@@ -221,7 +221,7 @@ are allowed (wildcard patterns depend on your Supabase project settings; when in
 
 **Search engines:** `metadata.robots` and `public/robots.txt` discourage indexing this internal portal.
 
-**Repo CI:** Pushes and PRs to `main`/`master` run `npm run lint` and `npm run build` (with placeholder `NEXT_PUBLIC_*` vars).
+**Repo CI:** A workflow template lives at **`ops/github-actions-ci.yml`**. Copy it to **`.github/workflows/ci.yml`** to enable Actions on push/PR to `main`/`master` (lint + build with placeholder `NEXT_PUBLIC_*` vars). If GitHub rejects pushing workflow files over HTTPS, use a credential with the **`workflow`** OAuth scope (e.g. `gh auth refresh -s workflow`) or add the file via the GitHub web UI once.
 
 **Node:** Use **Node 20+** locally and on Vercel (`package.json` `engines`).
 
