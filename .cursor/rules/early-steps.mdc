@@ -1,0 +1,100 @@
+---
+description: Early Steps portal — stack, workflow, security, quality bar (expanded project rule)
+alwaysApply: true
+---
+
+# Early Steps (React + Next.js + Supabase)
+
+## Stack & boundaries
+- **Frontend:** React 18, **Next.js 15** App Router (`src/app/`), feature UI in `src/views/` (not `src/pages/` — reserved by Next) and `src/components/`, jsPDF invoices in `src/utils/pdfGenerator.js`.
+- **Data/auth:** Supabase client in `src/lib/supabase.js`; data access rules in `supabase/schema.sql` (**RLS** is the real enforcement).
+- **Client env:** Only **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** (see `.env.example`). Optional: **`NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS`**, **`NEXT_PUBLIC_PREVIEW_DASHBOARD`** (dev). Never put **service_role**, DB passwords, or other secrets in the repo or client bundle.
+- **Code style:** **JavaScript / JSX** only (no TypeScript in this repo unless you add it). UI in `components/` and `views/`; Supabase calls in `hooks/` and `lib/`; keep PDF logic in the PDF util.
+
+## Where things live (quick map)
+- **Routing / shell:** `src/app/layout.jsx`, `src/app/page.jsx`, `src/App.jsx` (client view switcher); auth helpers `src/app/forgot-password/page.jsx`, `src/app/auth/update-password/page.jsx` (see `src/views/ForgotPasswordPage.jsx`, `UpdatePasswordPage.jsx`).
+- **Auth provider & session timeout:** `src/context/AuthContext.jsx` (activity-based expiry; do not weaken without intent)
+- **Auth UI:** `src/views/AuthPage.jsx`
+- **Invoices list / dashboard:** `src/views/Dashboard.jsx`
+- **Invoice form, signature, submit:** `src/views/InvoiceForm.jsx`, `src/components/SignaturePad.jsx`
+- **Supabase data hooks:** `src/hooks/useInvoices.js`
+- **Helpers:** `src/lib/validators.js`, `src/lib/rateLimiter.js`
+- **Schema & RLS:** `supabase/schema.sql` — apply changes here and document any required SQL run order for operators
+
+## Domain reminders
+- Providers submit **monthly service logs** and generate **CDTC-oriented PDFs**; preserve existing field meanings and filename conventions unless the product owner asks for a breaking change.
+- **Signatures** are captured client-side; treat bitmap/data URLs as sensitive user content—store and render safely, never as raw HTML injection.
+- If you add fields, thread them through **DB → hook → UI → PDF** so exports stay consistent with the form.
+
+## Workflow
+- **Non-trivial work (3+ steps or architecture):** plan first, then implement; if assumptions break, stop and replan. Verify as you go, not only at the end.
+- **Smallest change** that fully solves the problem; match existing patterns in `src/`.
+- **Do not** mark work complete without proof (dev server, lint/build, or the relevant user path).
+- **Auth/data bugs:** trace **client → Supabase → RLS policies**; fix root cause, not only UI.
+- **Bug reports:** use logs/errors/tests; fix autonomously when possible—minimize back-and-forth.
+- **Elegance:** for non-trivial fixes, ask if there is a cleaner approach; skip bikeshedding on obvious one-liners.
+- **Cross-layer:** consider impact on **auth**, **RLS**, **PDF output**, and **CSP / headers** (`next.config.mjs`, `vercel.json`) when touching fetches or new origins.
+
+## Optional task files
+- For larger efforts, you may use `tasks/todo.md` and `tasks/lessons.md` **if they exist or if the user wants them**. Do not treat them as mandatory for every small change.
+
+## Security
+- Secrets only via env (e.g. `.env.local`); never hardcode keys.
+- Treat input as untrusted; stay consistent with `src/lib/validators.js`.
+- **Login:** generic errors only—do not reveal whether an email is registered.
+- **`src/lib/rateLimiter.js`:** client-side / UX only; do not describe it as server-side brute-force protection.
+- Guard **XSS** (no `dangerouslySetInnerHTML` for user data), respect **RLS** / **IDOR** thinking for any new tables or policies, avoid leaking stack traces or internals to users.
+- New **Supabase policies** must use **`auth.uid()`** (or equivalent) for tenant isolation; avoid broad `using (true)` on sensitive tables.
+- Do not log **tokens**, **passwords**, or **full PII** to the console in production paths.
+
+## UI, a11y, and polish
+- Semantic HTML, keyboard use, visible focus, meaningful labels.
+- Motion: purposeful only; respect **`prefers-reduced-motion`**. Avoid layout jank and infinite decorative animation.
+- Styling: prefer **existing** patterns (`src/app/globals.css`, `src/components/ui/`). Do not invent a full design-token system unless the codebase already uses one.
+- Forms: associate **labels** with controls; preserve **focus management** after errors and after modal-like flows where applicable.
+
+## When the task fits these “modes” (guidance, not separate agents)
+- **Marketing / motion-heavy UI:** hierarchy → accessible interaction → responsive layout → motion → performance; tight diffs; justify heavy animation libs.
+- **UI consistency:** reuse `components/ui`; avoid one-off raw values when a shared pattern exists; components should cover default, hover, focus, disabled, error where applicable.
+- **Backend-shaped work** (Supabase SQL, RLS, Edge Functions later): correctness → validation → least privilege → clear errors; multi-step writes consistent and transactional where applicable.
+- **CI / deploy:** reproducible steps; env and secrets documented; think rollback for anything production-facing.
+- **Perf / a11y review:** keyboard reachability, labels/alt text, CLS; Core Web Vitals: **LCP, CLS, INP** (not FID); measure before micro-optimizing.
+
+## Verification checklist (use what applies)
+- [ ] `npm run dev` — happy path for the feature (login if needed, form submit if touched).
+- [ ] `npm run build` — no compile errors after changes.
+- [ ] `npm run lint` — no new lint violations (fix or justify).
+- [ ] Auth: session still restores; logout and timeout behavior unchanged unless intentionally changed.
+- [ ] Data: RLS still prevents cross-provider access for affected tables.
+- [ ] PDF: generated file opens and fields match the UI for a sample submission.
+
+## What to avoid
+- Unnecessary dependencies, speculative abstractions, magic strings without context, duplicated business rules, silent failures.
+- Schema or RLS changes without thinking through **migration / rollout** and policy tests.
+- Breaking changes without calling them out; dead code and stray **`console.log`**.
+
+## Definition of done
+- Behavior correct for the scenario; auth and validation still sound.
+- No new secrets in source; RLS changes live in **`supabase/schema.sql`** with clear, minimal policies.
+- **Lint / build** pass; no obvious security or a11y regressions.
+- Diff is **small and reviewable**; summary notes follow-up risks if any.
+
+## Commits & review hygiene
+- Prefer **focused commits** or a **single coherent PR** with a short description of **what** changed and **why** (not a dump of file names).
+- Call out **breaking** changes: new env vars, required SQL migrations, auth redirect URL updates in Supabase, or CSP/connect-src changes.
+- If you skip tests or manual steps, say **what was not run** and **what risk remains**.
+
+## Deploy & Supabase dashboard (when relevant)
+- Production/staging hosts need **`NEXT_PUBLIC_SUPABASE_*`** set on the **build** environment (Next inlines them at build time).
+- After adding a production domain, update **Supabase → Authentication → URL configuration** (redirect / site URL) so email links and OAuth callbacks still work.
+- If you change API shape or RLS, confirm **existing users** are not locked out of their own rows (policies tied to `auth.uid()`).
+
+## Common pitfalls in this codebase
+- **“Works in SQL editor but not in app”:** often RLS, wrong `provider_id`, or using the anon client for something that needs a server path—fix policy or app logic, do not disable RLS casually.
+- **Empty or stale env:** `src/lib/supabase.js` throws if `NEXT_PUBLIC_*` vars are missing; after editing `.env.local`, restart **`npm run dev`**.
+- **PDF regressions:** verify **long child names**, **many service rows**, and **signature present/absent** so pagination and layout still look acceptable.
+
+## When you are unsure
+- **Read** the nearest call sites and **`supabase/schema.sql`** before editing contracts.
+- **Prefer asking one precise question** over shipping a guess that widens RLS or leaks data.
+- **Align with the README** (`README.md`) for setup, security notes, and deployment expectations when behavior is ambiguous.

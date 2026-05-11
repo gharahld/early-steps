@@ -1,0 +1,37 @@
+# Copy to .github/workflows/ci.yml to enable GitHub Actions.
+# Pushing workflow files over HTTPS requires a token with the `workflow` scope
+# (e.g. `gh auth refresh -s workflow` or a PAT). This copy lives outside .github/
+# so the rest of the repo can be pushed without that scope.
+
+# Lint and production build on every push/PR. Uses placeholder Supabase vars so
+# `src/lib/supabase.js` can initialize during `next build` (real keys come from Vercel/env at deploy).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ci-placeholder-not-for-real-use
+        run: npm run build

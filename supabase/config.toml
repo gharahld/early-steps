@@ -1,0 +1,10 @@
+# Supabase CLI (https://supabase.com/docs/guides/cli)
+# After `supabase link`, deploy auth functions:
+#   supabase functions deploy auth-rate-limited-signin
+#   supabase functions deploy auth-rate-limited-signup
+
+[functions.auth-rate-limited-signin]
+verify_jwt = false
+
+[functions.auth-rate-limited-signup]
+verify_jwt = false

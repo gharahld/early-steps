@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+out/
+build/
+
+# Vercel link metadata (can include project/org identifiers)
+.vercel/
+
+# Turbopack (if enabled)
+.turbo/
+
+# Environment — NEVER commit secrets (allow only the template)
+.env
+.env.*
+!.env.example
+
+# Debug & package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Tooling caches
+.eslintcache
+*.tsbuildinfo
+
+# Test coverage (if you add Vitest/Jest later)
+coverage/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Certificates / keys (never commit)
+*.pem
+*.p12
+*.key
+
+# Optional: local scratch (uncomment if you use this name)
+# scratch/
