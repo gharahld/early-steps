@@ -1,0 +1,2 @@
+# Keep Vercel upload small (source still builds from repo root)
+.cursor/

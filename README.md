@@ -193,13 +193,33 @@ The UI still applies a **client-side** lockout for responsiveness. To enforce **
 
 ## Deployment (Vercel)
 
-Vercel **auto-detects Next.js** (`next build`). `vercel.json` pins `npm ci` for installs and adds security + long-cache headers for `/_next/static/*`.
+Vercel runs **`next build`** for this repo. **`vercel.json`** sets `framework: nextjs`, **`npm ci`** for installs, and security + cache headers for `/_next/static/*`. **`.nvmrc`** requests Node **20** (confirm under **Project → Settings → General → Node.js Version** if builds pick the wrong runtime).
 
-1. Push the repo to GitHub (or GitLab / Bitbucket) and **Import** it in the [Vercel dashboard](https://vercel.com/new).
-2. **Environment variables:** add the **`NEXT_PUBLIC_*`** names from **§3 Configure environment**. They are inlined at **build** time—set them for **Production** and **Preview** as needed.
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - Optional: `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true` if Edge auth functions are deployed.
-3. Deploy.
+### Option A — Dashboard (recommended first time)
+
+1. Sign in at [vercel.com](https://vercel.com) and open **[Add New… → Project](https://vercel.com/new)**.
+2. **Import** the GitHub repo **`gharahld/early-steps`** (install the Vercel GitHub app for the org if prompted).
+3. Leave **Framework Preset** as **Next.js**, **Root Directory** as **`.`**, build/output commands as defaults (Vercel will run `npm run build`).
+4. Expand **Environment Variables** and add (same names as **§3 Configure environment**):
+   - `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL  
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase **anon** key (never the service role)  
+   - Optional: `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS` = `true` if Edge auth is deployed  
+   Apply to **Production** and **Preview** (and **Development** if you use Vercel’s dev integration) so preview deployments can call Supabase.
+5. Click **Deploy**. After the first deploy, open **Domains** and note your production URL (and `*.vercel.app` preview URLs).
+
+### Option B — Vercel CLI
+
+Requires a valid login (`vercel whoami` should succeed).
+
+```bash
+vercel login          # once, if token is missing or invalid
+cd early-steps
+vercel link           # connect this folder to a Vercel project (create new or link existing)
+npm run vercel:preview   # preview deployment
+npm run vercel:prod    # production deployment
+```
+
+Local build check (same as CI / Vercel build):
 
 ```bash
 npm ci && npm run build

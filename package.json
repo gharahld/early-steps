@@ -10,7 +10,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "vercel:preview": "vercel",
+    "vercel:prod": "vercel --prod"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
