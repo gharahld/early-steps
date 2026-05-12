@@ -255,6 +255,19 @@ Password reset emails use **`/auth/update-password`** as the return path. Ensure
 
 are allowed (wildcard patterns depend on your Supabase project settings; when in doubt, add explicit URLs).
 
+### Production troubleshooting: “Signed up / signed in but no dashboard”
+
+The shell on `/` shows **Dashboard** only when Supabase auth has set a **`user`** in React state. There is no separate `/dashboard` URL.
+
+1. **Still on the login form after “Sign in”** — Session never stuck in the app. Typical causes:
+   - **Vercel env** — `NEXT_PUBLIC_SUPABASE_URL` and one of `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` must match the **same** Supabase project you used when creating the user. Redeploy after changing env vars (values are inlined at build time).
+   - **`NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true`** — Deploy **`auth-rate-limited-signin`** (and signup if used) and ensure **`public.auth_rate_events`** exists (from `supabase/schema.sql`). If the function returns 404/500, sign-in fails or never completes. Easiest narrow test: set this flag to **`false`** on Vercel and redeploy so the browser uses direct `signInWithPassword` (keep Edge off until functions + tables are verified).
+   - **Email confirmation** — If **Confirm email** is on, the user must click the link before password sign-in returns a session (see §2 above).
+
+2. **Stuck on full-screen “Loading…”** — Initial session is taking too long or failing before `user` is set. Hard-refresh once; if it persists, check the browser **Console** and **Network** tab for blocked requests to your Supabase host.
+
+3. **Dashboard appears but “Failed to load invoices”** — The user **is** signed in; fix database/RLS: run **`supabase/schema.sql`** on the project and confirm `npm run check:supabase` passes.
+
 **Search engines:** `metadata.robots` and `public/robots.txt` discourage indexing this internal portal.
 
 **Repo CI:** A workflow template lives at **`ops/github-actions-ci.yml`**. Copy it to **`.github/workflows/ci.yml`** to enable Actions on push/PR to `main`/`master` (lint + build with placeholder `NEXT_PUBLIC_*` vars). If GitHub rejects pushing workflow files over HTTPS, use a credential with the **`workflow`** OAuth scope (e.g. `gh auth refresh -s workflow`) or add the file via the GitHub web UI once.

@@ -58,8 +58,13 @@ export async function signInViaEdge(email, password) {
     refresh_token: session.refresh_token,
   })
   if (error) throw new Error(GENERIC_AUTH_ERROR)
-  // Return the session Supabase just set — `getSession()` right after can still be null briefly.
-  return data ?? null
+  // Prefer client `setSession` payload; fall back to Edge JSON `session.user` if needed.
+  const clientUser = data?.user ?? null
+  const clientSession = data?.session ?? null
+  return {
+    user: clientUser ?? session.user ?? null,
+    session: clientSession,
+  }
 }
 
 /**
