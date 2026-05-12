@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "verify": "npm run lint && npm run build && npm run check:supabase",
     "vercel:preview": "vercel",
     "vercel:prod": "vercel --prod",
     "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs",

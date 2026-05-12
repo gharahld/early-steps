@@ -92,5 +92,46 @@ export function useInvoices() {
     return log
   }, [user, fetchInvoices])
 
-  return { invoices, loading, error, saveInvoice, refetch: fetchInvoices }
+  /** Full log + nested service_entries for edit flow (RLS: own logs only). */
+  const fetchInvoiceById = useCallback(async (logId) => {
+    if (!user || !logId) return null
+    const { data, error } = await supabase
+      .from('service_logs')
+      .select(`
+        id,
+        child_name,
+        dob,
+        caregiver,
+        address,
+        cell,
+        chart_ng,
+        service_coordinator,
+        medicaid_number,
+        frequency,
+        billing_month,
+        provider_name,
+        provider_attestation,
+        status,
+        service_entries (
+          id,
+          date_of_service,
+          procedure_code,
+          fpg,
+          rendering_provider,
+          location_code,
+          arrival_time,
+          departure_time,
+          travel_minutes,
+          caregiver_signature,
+          sort_order
+        )
+      `)
+      .eq('id', logId)
+      .single()
+
+    if (error) throw error
+    return data
+  }, [user])
+
+  return { invoices, loading, error, saveInvoice, refetch: fetchInvoices, fetchInvoiceById }
 }

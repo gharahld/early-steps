@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useInvoices } from '../hooks/useInvoices.js'
 import { SignaturePad } from '../components/SignaturePad.jsx'
@@ -33,30 +33,94 @@ function FI({ label, value, onChange, type = 'text', placeholder, span = 1 }) {
   )
 }
 
+const defaultHeader = (user, seed = {}) => ({
+  childName:           seed.child_name ?? '',
+  dob:                 seed.dob != null && seed.dob !== '' ? String(seed.dob).slice(0, 10) : '',
+  caregiver:           seed.caregiver ?? '',
+  address:             seed.address ?? '',
+  cell:                seed.cell ?? '',
+  chartNg:             seed.chart_ng ?? '',
+  serviceCoordinator:  seed.service_coordinator ?? '',
+  medicaidNumber:      seed.medicaid_number ?? '',
+  frequency:           seed.frequency ?? '',
+  billingMonth:        seed.billing_month ?? '',
+  provider:            seed.provider_name ?? user?.user_metadata?.full_name ?? '',
+  providerAttestation: seed.provider_attestation ?? user?.user_metadata?.full_name ?? '',
+})
+
+function mapDbEntriesToForm(rows) {
+  const sorted = [...(rows || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  return sorted.map(se => ({
+    id: se.id,
+    dateOfService:       se.date_of_service ? String(se.date_of_service).slice(0, 10) : '',
+    procedureCode:       se.procedure_code ?? '',
+    fpg:                 se.fpg || 'F',
+    renderingProvider:   se.rendering_provider ?? '',
+    locationCode:        se.location_code ?? '1',
+    arrivalTime:         se.arrival_time ?? '',
+    departureTime:        se.departure_time ?? '',
+    travelMinutes:       se.travel_minutes != null ? String(se.travel_minutes) : '',
+    caregiverSignature:  se.caregiver_signature ?? '',
+  }))
+}
+
 export function InvoiceForm({ initialData, onBack }) {
   const { user } = useAuth()
-  const { saveInvoice } = useInvoices()
+  const { saveInvoice, fetchInvoiceById } = useInvoices()
 
   const [submitStatus,   setSubmitStatus]   = useState('idle') // idle | saving | generating | done | error
   const [saveError,      setSaveError]      = useState('')
+  const [detailLoading,  setDetailLoading]  = useState(() => !!initialData?.id)
+  const [detailError,    setDetailError]    = useState('')
   const [signatureData,  setSignatureData]  = useState(null)
 
-  const [header, setHeader] = useState({
-    childName:           initialData?.child_name    ?? '',
-    dob:                 initialData?.dob            ?? '',
-    caregiver:           initialData?.caregiver      ?? '',
-    address:             initialData?.address        ?? '',
-    cell:                initialData?.cell           ?? '',
-    chartNg:             initialData?.chart_ng       ?? '',
-    serviceCoordinator:  initialData?.service_coordinator ?? '',
-    medicaidNumber:      initialData?.medicaid_number ?? '',
-    frequency:           initialData?.frequency      ?? '',
-    billingMonth:        initialData?.billing_month  ?? '',
-    provider:            initialData?.provider_name  ?? user?.user_metadata?.full_name ?? '',
-    providerAttestation: initialData?.provider_attestation ?? user?.user_metadata?.full_name ?? '',
-  })
+  const [header, setHeader] = useState(() => defaultHeader(null, initialData || {}))
 
   const [entries, setEntries] = useState([EMPTY_ENTRY(), EMPTY_ENTRY(), EMPTY_ENTRY()])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!initialData?.id) {
+      setDetailLoading(false)
+      setDetailError('')
+      setHeader(defaultHeader(user, {}))
+      setEntries([EMPTY_ENTRY(), EMPTY_ENTRY(), EMPTY_ENTRY()])
+      setSignatureData(null)
+      return () => { cancelled = true }
+    }
+
+    setDetailLoading(true)
+    setDetailError('')
+    fetchInvoiceById(initialData.id)
+      .then(row => {
+        if (cancelled || !row) return
+        setHeader(defaultHeader(user, {
+          child_name: row.child_name,
+          dob: row.dob,
+          caregiver: row.caregiver,
+          address: row.address,
+          cell: row.cell,
+          chart_ng: row.chart_ng,
+          service_coordinator: row.service_coordinator,
+          medicaid_number: row.medicaid_number,
+          frequency: row.frequency,
+          billing_month: row.billing_month,
+          provider_name: row.provider_name,
+          provider_attestation: row.provider_attestation,
+        }))
+        const mapped = mapDbEntriesToForm(row.service_entries)
+        setEntries(mapped.length ? mapped : [EMPTY_ENTRY(), EMPTY_ENTRY(), EMPTY_ENTRY()])
+        setSignatureData(null)
+      })
+      .catch(err => {
+        if (!cancelled) setDetailError(err.message || 'Could not load this invoice.')
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [initialData?.id, fetchInvoiceById, user])
 
   const setH = useCallback((f, v) => setHeader(h => ({ ...h, [f]: v })), [])
   const setE = useCallback((id, f, v) => setEntries(p => p.map(e => e.id === id ? { ...e, [f]: v } : e)), [])
@@ -90,13 +154,46 @@ export function InvoiceForm({ initialData, onBack }) {
   const secLabel = { fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', color: '#475569', textTransform: 'uppercase' }
   const cellStyle = { padding: '4px 6px' }
 
+  const topBar = (
+    <div style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>← Back</button>
+        <div style={{ width: '1px', height: '20px', background: '#1e293b' }} />
+        <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+          {initialData ? `Invoice — ${initialData.child_name}` : 'New Invoice'}
+        </span>
+      </div>
+    </div>
+  )
+
+  if (initialData?.id && detailLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+        {topBar}
+        <div style={{ padding: '48px 24px', textAlign: 'center', color: T.muted, fontSize: '14px' }}>Loading invoice…</div>
+      </div>
+    )
+  }
+
+  if (initialData?.id && detailError) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+        {topBar}
+        <div style={{ maxWidth: '560px', margin: '28px auto', padding: '20px 22px', background: T.dangerBg, border: `1px solid ${T.dangerBorder}`, borderRadius: '8px', fontSize: '14px', color: T.danger }}>
+          <p style={{ margin: '0 0 14px', lineHeight: 1.5 }}>{detailError}</p>
+          <Button onClick={onBack} variant="secondary" size="sm">Back to list</Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
       {/* ── Topbar ──────────────────────────────────────────────────────────── */}
       <div style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>← Back</button>
+          <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>← Back</button>
           <div style={{ width: '1px', height: '20px', background: '#1e293b' }} />
           <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
             {initialData ? `Invoice — ${initialData.child_name}` : 'New Invoice'}

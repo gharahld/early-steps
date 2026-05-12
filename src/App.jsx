@@ -25,6 +25,7 @@ function Router() {
   if (view === 'invoice') {
     return (
       <InvoiceForm
+        key={selected?.id ?? 'new'}
         initialData={selected}
         onBack={() => { setView('dashboard'); setSelected(null) }}
       />
