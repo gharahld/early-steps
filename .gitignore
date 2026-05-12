@@ -1,3 +1,6 @@
+# Supabase CLI (link / pooler hints; do not commit)
+supabase/.temp/
+
 # Dependencies
 node_modules/
 
