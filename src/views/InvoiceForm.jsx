@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useInvoices } from '../hooks/useInvoices.js'
 import { SignaturePad } from '../components/SignaturePad.jsx'
-import { generateInvoicePDF } from '../utils/pdfGenerator.js'
+import { buildInvoicePdfDocument, invoicePdfFilename, openInvoicePdfForPrint } from '../utils/pdfGenerator.js'
 import { Button, Badge, CardHeader, T } from '../components/ui/index.jsx'
 
 const PROCEDURE_CODES = ['', 'PHY', 'OCCT', 'SPL', 'PSTH', 'OCTH', 'SPCH', 'COIFF', 'CONOF', 'CONPF', 'CONSF', 'TELEC']
@@ -130,6 +130,11 @@ export function InvoiceForm({ initialData, onBack }) {
   const canSubmit    = signatureData && header.provider
   const filledCount  = entries.filter(e => e.dateOfService || e.procedureCode).length
 
+  const handleOpenPrintPdf = () => {
+    if (!canSubmit || !signatureData) return
+    openInvoicePdfForPrint({ header, entries, signatureDataUrl: signatureData })
+  }
+
   const handleSave = async (status) => {
     setSaveError('')
     setSubmitStatus('saving')
@@ -137,7 +142,8 @@ export function InvoiceForm({ initialData, onBack }) {
       await saveInvoice({ id: initialData?.id, header, entries, status })
       if (status === 'submitted') {
         setSubmitStatus('generating')
-        generateInvoicePDF({ header, entries, signatureDataUrl: signatureData })
+        const doc = buildInvoicePdfDocument({ header, entries, signatureDataUrl: signatureData })
+        doc.save(invoicePdfFilename(header))
         setSubmitStatus('done')
         setTimeout(() => setSubmitStatus('idle'), 3000)
       } else {
@@ -209,6 +215,11 @@ export function InvoiceForm({ initialData, onBack }) {
           <Button onClick={() => handleSave('submitted')}
             disabled={!canSubmit || ['saving','generating'].includes(submitStatus)}>
             {submitStatus === 'generating' ? 'Generating…' : submitStatus === 'saving' ? 'Saving…' : '⬇ Submit & Download PDF'}
+          </Button>
+          <Button type="button" onClick={handleOpenPrintPdf} variant="secondary" size="sm"
+            disabled={!canSubmit || ['saving','generating'].includes(submitStatus)}
+            title="Opens the same PDF as download in a new tab for printing">
+            Print PDF
           </Button>
         </div>
       </div>
