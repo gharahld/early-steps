@@ -16,7 +16,8 @@
     "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs",
     "supabase:link": "supabase link",
     "db:apply:remote": "supabase db query -f supabase/schema.sql --linked",
-    "db:push:remote": "supabase db push --linked"
+    "db:push:remote": "supabase db push --linked",
+    "supabase:functions:deploy": "supabase functions deploy auth-rate-limited-signin && supabase functions deploy auth-rate-limited-signup"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",

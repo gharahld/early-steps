@@ -112,8 +112,12 @@ if (process.env.NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS === 'true') {
   }
   if (res.status === 404) {
     console.error(
-      'FAIL: NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true but auth-rate-limited-signin returned 404. Deploy the function or set the flag to false.',
+      'FAIL: NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true but auth-rate-limited-signin returned 404 (function not deployed).',
     )
+    console.error('Fix A — use direct browser auth (simplest): set NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=false in .env.local and Vercel, restart dev / redeploy, then re-run npm run check:supabase.')
+    console.error('Fix B — deploy Edge auth (from repo root, after supabase link):')
+    console.error('  npm run supabase:functions:deploy')
+    console.error('  (runs: supabase functions deploy auth-rate-limited-signin && …signup)')
     process.exit(1)
   }
   if (res.status === 503) {
