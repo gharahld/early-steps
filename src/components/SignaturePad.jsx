@@ -1,10 +1,11 @@
 import { useRef } from 'react'
 import { T } from './ui/index.jsx'
 
-export function SignaturePad({ onSigned, onClear }) {
+export function SignaturePad({ onSigned, onClear, height = 140, ariaDescribedBy, ariaLabelledby }) {
   const canvasRef = useRef(null)
   const drawing   = useRef(false)
   const hasMark   = useRef(false)
+  const h = Math.max(80, Math.min(320, Number(height) || 140))
 
   const getPos = (e, canvas) => {
     const rect = canvas.getBoundingClientRect()
@@ -62,11 +63,13 @@ export function SignaturePad({ onSigned, onClear }) {
         <canvas
           ref={canvasRef}
           width={600}
-          height={120}
-          style={{ display: 'block', width: '100%', height: '120px', cursor: 'crosshair', touchAction: 'none' }}
+          height={Math.round(Math.max(96, h) * 1.5)}
+          style={{ display: 'block', width: '100%', height: `${h}px`, cursor: 'crosshair', touchAction: 'none' }}
           onMouseDown={start} onMouseMove={move} onMouseUp={stop} onMouseLeave={stop}
           onTouchStart={start} onTouchMove={move} onTouchEnd={stop}
-          aria-label="Signature pad — draw your signature here"
+          aria-label={ariaLabelledby ? undefined : 'Signature pad — draw your signature here'}
+          aria-labelledby={ariaLabelledby || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
           role="img"
         />
         <div style={{

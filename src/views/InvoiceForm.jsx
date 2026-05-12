@@ -206,30 +206,35 @@ export function InvoiceForm({ initialData, onBack }) {
           </div>
         </div>
 
-        {/* ── Provider Sign-Off ─────────────────────────────────────────────── */}
-        <div style={card}>
+        {/* ── Provider Sign-Off (same scroll page as the rest of the form) ───── */}
+        <div id="provider-sign-off" style={{ ...card, scrollMarginTop: '72px' }}>
           <div style={cardHead}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={secLabel}>Provider Sign-Off</span>
               {signatureData
                 ? <Badge color="green">✓ Signed</Badge>
-                : <Badge color="red">⚠ Signature required</Badge>}
+                : <Badge color="red">⚠ Signature required to submit</Badge>}
             </div>
           </div>
-          <div style={{ padding: '22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '5px' }}>Print Provider Name</label>
-              <input value={header.provider} onChange={e => setH('provider', e.target.value)} placeholder="Full legal name"
-                style={{ width: '100%', padding: '8px 10px', border: `1.5px solid ${T.border}`, borderRadius: '6px', fontSize: '13px', color: T.text, background: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+          <div style={{ padding: '22px' }}>
+            <p style={{ fontSize: '13px', color: T.muted, margin: '0 0 20px', lineHeight: 1.55, maxWidth: '52rem' }}>
+              This section is part of the same service log as the patient details and service rows above.
+              Sign below — your signature is stored with the invoice and included on the PDF you download.
+            </p>
+            <div style={{ marginBottom: '22px' }}>
+              <label htmlFor="invoice-provider-print-name" style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '5px' }}>Print Provider Name</label>
+              <input id="invoice-provider-print-name" name="provider_print_name" value={header.provider} onChange={e => setH('provider', e.target.value)} placeholder="Full legal name"
+                autoComplete="name"
+                style={{ width: '100%', maxWidth: '640px', padding: '8px 10px', border: `1.5px solid ${T.border}`, borderRadius: '6px', fontSize: '13px', color: T.text, background: '#fff', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '5px' }}>Signature of Provider</label>
-              <SignaturePad onSigned={setSignatureData} onClear={() => setSignatureData(null)} />
+              <span id="invoice-provider-signature-label" style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '8px' }}>Signature of Provider</span>
+              <SignaturePad onSigned={setSignatureData} onClear={() => setSignatureData(null)} height={152} ariaLabelledby="invoice-provider-signature-label" />
             </div>
           </div>
           {!signatureData && (
             <div style={{ margin: '0 22px 18px', padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', fontSize: '12px', color: '#9a3412' }}>
-              ✏️ Draw your signature above to enable PDF submission.
+              Draw your signature in the box above to enable <strong>Submit &amp; Download PDF</strong>. This is one continuous form — scroll up anytime to edit patient or service entries.
             </div>
           )}
         </div>
@@ -278,7 +283,7 @@ export function InvoiceForm({ initialData, onBack }) {
           >
             {['saving','generating'].includes(submitStatus) ? '⏳ Processing…' : '⬇ Submit & Download Invoice PDF'}
           </Button>
-          {!signatureData && <p style={{ marginTop: '8px', fontSize: '12px', color: T.subtle }}>Sign above to enable submission</p>}
+          {!signatureData && <p style={{ marginTop: '8px', fontSize: '12px', color: T.subtle }}>Add your signature in <a href="#provider-sign-off" style={{ color: T.brand, fontWeight: '600' }}>Provider Sign-Off</a> below to enable submission.</p>}
         </div>
       </div>
     </div>
