@@ -78,7 +78,7 @@ export function UpdatePasswordPage() {
 
   if (invalid && !ready) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
+      <div className="portal-standalone-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
         <div style={{ width: '100%', maxWidth: '420px', background: T.card, borderRadius: '16px', border: `1px solid ${T.border}`, padding: '32px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '18px', fontWeight: '800', color: T.text, marginBottom: '12px' }}>Link invalid or expired</h1>
           <p style={{ fontSize: '13px', color: T.muted, marginBottom: '20px', lineHeight: 1.5 }}>
@@ -95,7 +95,7 @@ export function UpdatePasswordPage() {
 
   if (!ready && !invalid) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, color: T.muted, fontFamily: 'sans-serif' }}>
+      <div className="portal-standalone-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, color: T.muted, fontFamily: 'sans-serif', padding: '24px', textAlign: 'center' }}>
         Verifying link…
       </div>
     )
@@ -103,14 +103,14 @@ export function UpdatePasswordPage() {
 
   if (done) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, color: T.success, fontWeight: '600' }}>
+      <div className="portal-standalone-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, color: T.success, fontWeight: '600', padding: '24px', textAlign: 'center' }}>
         Password updated. Redirecting to sign in…
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
+    <div className="portal-standalone-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
       <div style={{ width: '100%', maxWidth: '420px', background: T.card, borderRadius: '16px', border: `1px solid ${T.border}`, padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <h1 style={{ fontSize: '20px', fontWeight: '800', color: T.text, margin: '0 0 8px' }}>Choose a new password</h1>
         <p style={{ fontSize: '13px', color: T.muted, margin: '0 0 24px' }}>Use at least 8 characters. Mix letters, numbers, and symbols for a stronger password.</p>

@@ -49,7 +49,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
+    <div className="portal-standalone-auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, padding: '24px' }}>
       <div style={{ width: '100%', maxWidth: '420px', background: T.card, borderRadius: '16px', border: `1px solid ${T.border}`, padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <h1 style={{ fontSize: '20px', fontWeight: '800', color: T.text, margin: '0 0 8px' }}>Reset password</h1>
         <p style={{ fontSize: '13px', color: T.muted, margin: '0 0 24px', lineHeight: 1.5 }}>

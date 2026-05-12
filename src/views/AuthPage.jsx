@@ -69,9 +69,9 @@ export function AuthPage() {
   const locked = countdown > 0
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: T.navy }}>
+    <div className="portal-auth-root" style={{ minHeight: '100vh', display: 'flex', background: T.navy }}>
       {/* ── Left branding panel ────────────────────────────────────────────── */}
-      <div style={{
+      <div className="portal-auth-brand" style={{
         width: '420px', flexShrink: 0, minHeight: '100vh',
         background: 'linear-gradient(160deg, #0f172a 0%, #1e3a5f 100%)',
         display: 'flex', flexDirection: 'column', padding: '48px 44px',
@@ -89,7 +89,7 @@ export function AuthPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+        <div className="portal-auth-brand-body" style={{ marginTop: 'auto', marginBottom: 'auto' }}>
           <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: '800', lineHeight: 1.2, margin: '0 0 16px' }}>
             Therapy Provider<br />Invoice System
           </h1>
@@ -115,12 +115,12 @@ export function AuthPage() {
       </div>
 
       {/* ── Right form panel ───────────────────────────────────────────────── */}
-      <div style={{
+      <div className="portal-auth-form-panel" style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: T.bg, padding: '48px 24px',
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
-          <div style={{
+          <div className="portal-auth-card" style={{
             background: T.card, borderRadius: '16px',
             border: `1px solid ${T.border}`, padding: '36px 32px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.06)',

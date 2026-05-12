@@ -23,7 +23,7 @@ const EMPTY_ENTRY = () => ({
 // Tiny inline field wrappers used only inside this form
 function FI({ label, value, onChange, type = 'text', placeholder, span = 1 }) {
   return (
-    <div style={{ gridColumn: `span ${span}` }}>
+    <div className="portal-fi" style={{ gridColumn: `span ${span}` }}>
       <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '5px' }}>{label}</label>
       <input type={type} value={value} placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
@@ -155,11 +155,11 @@ export function InvoiceForm({ initialData, onBack }) {
   const cellStyle = { padding: '4px 6px' }
 
   const topBar = (
-    <div style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>← Back</button>
-        <div style={{ width: '1px', height: '20px', background: '#1e293b' }} />
-        <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+    <div className="portal-invoice-topbar" style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+        <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>← Back</button>
+        <div style={{ width: '1px', height: '20px', background: '#1e293b', flexShrink: 0 }} />
+        <span className="portal-invoice-topbar-title" style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
           {initialData ? `Invoice — ${initialData.child_name}` : 'New Invoice'}
         </span>
       </div>
@@ -170,7 +170,7 @@ export function InvoiceForm({ initialData, onBack }) {
     return (
       <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
         {topBar}
-        <div style={{ padding: '48px 24px', textAlign: 'center', color: T.muted, fontSize: '14px' }}>Loading invoice…</div>
+        <div className="portal-invoice-content" style={{ padding: '48px 24px', textAlign: 'center', color: T.muted, fontSize: '14px' }}>Loading invoice…</div>
       </div>
     )
   }
@@ -179,7 +179,7 @@ export function InvoiceForm({ initialData, onBack }) {
     return (
       <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
         {topBar}
-        <div style={{ maxWidth: '560px', margin: '28px auto', padding: '20px 22px', background: T.dangerBg, border: `1px solid ${T.dangerBorder}`, borderRadius: '8px', fontSize: '14px', color: T.danger }}>
+        <div className="portal-invoice-content" style={{ maxWidth: '560px', margin: '28px auto', padding: '20px 22px', background: T.dangerBg, border: `1px solid ${T.dangerBorder}`, borderRadius: '8px', fontSize: '14px', color: T.danger }}>
           <p style={{ margin: '0 0 14px', lineHeight: 1.5 }}>{detailError}</p>
           <Button onClick={onBack} variant="secondary" size="sm">Back to list</Button>
         </div>
@@ -191,15 +191,15 @@ export function InvoiceForm({ initialData, onBack }) {
     <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
       {/* ── Topbar ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>← Back</button>
-          <div style={{ width: '1px', height: '20px', background: '#1e293b' }} />
-          <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+      <div className="portal-invoice-topbar" style={{ background: T.navy, height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+          <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>← Back</button>
+          <div style={{ width: '1px', height: '20px', background: '#1e293b', flexShrink: 0 }} />
+          <span className="portal-invoice-topbar-title" style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
             {initialData ? `Invoice — ${initialData.child_name}` : 'New Invoice'}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="portal-invoice-topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {submitStatus === 'done' && <Badge color="green">✓ PDF Downloaded</Badge>}
           {submitStatus === 'error' && <Badge color="red">Save failed</Badge>}
           <Button onClick={() => handleSave('draft')} variant="secondary" size="sm"
@@ -213,7 +213,7 @@ export function InvoiceForm({ initialData, onBack }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1060px', margin: '0 auto', padding: '24px 18px' }}>
+      <div className="portal-invoice-content" style={{ maxWidth: '1060px', margin: '0 auto', padding: '24px 18px' }}>
 
         {saveError && (
           <div style={{ marginBottom: '16px', padding: '12px 16px', background: T.dangerBg, border: `1px solid ${T.dangerBorder}`, borderRadius: '8px', fontSize: '13px', color: T.danger }}>
@@ -224,7 +224,7 @@ export function InvoiceForm({ initialData, onBack }) {
         {/* ── Patient Info ──────────────────────────────────────────────────── */}
         <div style={card}>
           <div style={cardHead}><span style={secLabel}>Patient & Billing Information</span></div>
-          <div style={{ padding: '22px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
+          <div className="portal-patient-grid" style={{ padding: '22px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
             <FI label="Child Name"          value={header.childName}          onChange={v => setH('childName', v)}          placeholder="Full name" />
             <FI label="Date of Birth"       value={header.dob}                onChange={v => setH('dob', v)}                type="date" />
             <FI label="Caregiver"           value={header.caregiver}          onChange={v => setH('caregiver', v)}          placeholder="Caregiver name" />
@@ -237,11 +237,11 @@ export function InvoiceForm({ initialData, onBack }) {
             <FI label="Billing Month"       value={header.billingMonth}       onChange={v => setH('billingMonth', v)}       type="month" />
             <FI label="Provider"            value={header.provider}           onChange={v => setH('provider', v)}           placeholder="Provider name" />
           </div>
-          <div style={{ padding: '12px 22px', background: T.warningBg, borderTop: `1px solid ${T.warningBorder}`, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="portal-attest-strip" style={{ padding: '12px 22px', background: T.warningBg, borderTop: `1px solid ${T.warningBorder}`, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', color: '#92400e' }}>
               I, <strong>{header.providerAttestation || '_______________'}</strong>, attest that I have provided the services below.
             </span>
-            <input value={header.providerAttestation} onChange={e => setH('providerAttestation', e.target.value)}
+            <input className="portal-attest-input" value={header.providerAttestation} onChange={e => setH('providerAttestation', e.target.value)}
               placeholder="Provider attestation name"
               style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: '6px', border: `1.5px solid ${T.warningBorder}`, fontSize: '12px', width: '210px', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
             />
@@ -250,7 +250,7 @@ export function InvoiceForm({ initialData, onBack }) {
 
         {/* ── Service Entries ───────────────────────────────────────────────── */}
         <div style={card}>
-          <div style={cardHead}>
+          <div className="portal-entries-card-head" style={cardHead}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={secLabel}>Service Entries</span>
               <Badge color="blue">{filledCount} logged</Badge>
@@ -261,7 +261,7 @@ export function InvoiceForm({ initialData, onBack }) {
             <strong>Proc:</strong> PHY/OCCT/SPL=Session · PSTH/OCTH/SPCH=Eval · COIFF=FSP · GT=Telehealth &nbsp;|&nbsp;
             <strong>Loc:</strong> 1=Home · A=Office · 5=Daycare · P=Public · 9=Dev.Preschool
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="portal-entries-scroll" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead><tr style={{ background: '#f8fafc' }}>
                 {['#','Date','Procedure','F/P/GT','Rendering Provider','Location','Arrival','Departure','Travel min','Caregiver Sig.',''].map((h, i) => (
@@ -341,7 +341,7 @@ export function InvoiceForm({ initialData, onBack }) {
           <CardHeader right={<Badge color="amber">Admin Only</Badge>}>
             CDTC Fiscal Processing
           </CardHeader>
-          <div style={{ padding: '16px 22px 20px' }}>
+          <div className="portal-cdtc-wrap" style={{ padding: '16px 22px 20px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead><tr>
                 {['Payer','Procedure','Provider','Date Range','Units','Amount','Denial Code'].map(h => (
@@ -367,7 +367,7 @@ export function InvoiceForm({ initialData, onBack }) {
         </div>
 
         {/* ── Bottom CTA ────────────────────────────────────────────────────── */}
-        <div style={{ textAlign: 'center', padding: '16px 0 32px' }}>
+        <div className="portal-invoice-footer" style={{ textAlign: 'center', padding: '16px 0 32px' }}>
           <Button
             onClick={() => handleSave('submitted')}
             disabled={!canSubmit || ['saving','generating'].includes(submitStatus)}

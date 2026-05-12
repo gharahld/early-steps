@@ -23,7 +23,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
     <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="portal-dash-header" style={{
         background: T.navy, height: '56px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', position: 'sticky', top: 0, zIndex: 50,
@@ -37,7 +37,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
           }}>ES</div>
           <div>
             <div style={{ color: '#fff', fontWeight: '700', fontSize: '13px' }}>Broward Early Steps</div>
-            <div style={{ color: '#475569', fontSize: '10px', letterSpacing: '0.06em' }}>PROVIDER PORTAL</div>
+            <div className="portal-dash-hide-xs" style={{ color: '#475569', fontSize: '10px', letterSpacing: '0.06em' }}>PROVIDER PORTAL</div>
           </div>
         </div>
 
@@ -51,7 +51,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
             }}>{initials}</div>
             <div>
               <div style={{ color: '#fff', fontSize: '12px', fontWeight: '600' }}>{displayName}</div>
-              <div style={{ color: '#64748b', fontSize: '10px' }}>{user?.email}</div>
+              <div className="portal-dash-user-email" style={{ color: '#64748b', fontSize: '10px' }}>{user?.email}</div>
             </div>
           </div>
 
@@ -70,13 +70,13 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1040px', margin: '0 auto', padding: '32px 20px' }}>
+      <div className="portal-dash-content" style={{ maxWidth: '1040px', margin: '0 auto', padding: '32px 20px' }}>
 
         {/* ── Page header ─────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div className="portal-dash-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: T.text, margin: 0 }}>My Invoices</h1>
-            <p style={{ fontSize: '13px', color: T.muted, margin: '4px 0 0' }}>
+            <p className="portal-dash-subtitle" style={{ fontSize: '13px', color: T.muted, margin: '4px 0 0' }}>
               Manage and submit your monthly service logs
             </p>
           </div>
@@ -84,7 +84,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
         </div>
 
         {/* ── Stat cards ──────────────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="portal-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', marginBottom: '24px' }}>
           {[
             { label: 'Submitted',  value: submitted, color: T.success,  bg: T.successBg,  icon: '✓' },
             { label: 'Drafts',     value: drafts,    color: T.warning,  bg: T.warningBg,  icon: '✏️' },
@@ -125,6 +125,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
           )}
 
           {!loading && !error && (
+            <div className="portal-table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
@@ -176,6 +177,7 @@ export function Dashboard({ onNewInvoice, onOpenInvoice }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
 

@@ -1,5 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: #f1f5f9;
@@ -18,3 +22,219 @@ input, select { font-family: inherit; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+/* ── Mobile / tablet: shared portal layout (overrides inline widths where needed) ── */
+@media (max-width: 768px) {
+  .portal-auth-root {
+    flex-direction: column !important;
+  }
+
+  .portal-auth-brand {
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 22px 18px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .portal-auth-brand-body {
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .portal-auth-brand-body h1 {
+    font-size: 24px !important;
+    line-height: 1.25 !important;
+  }
+
+  .portal-auth-form-panel {
+    padding: 20px 16px !important;
+  }
+
+  .portal-auth-card {
+    padding: 24px 18px !important;
+    border-radius: 12px !important;
+  }
+
+  .portal-app-loading {
+    padding: 20px 16px !important;
+    text-align: center;
+  }
+
+  .portal-dash-header {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    min-height: 52px !important;
+    padding-top: max(10px, env(safe-area-inset-top)) !important;
+    padding-bottom: 10px !important;
+    padding-left: max(14px, env(safe-area-inset-left)) !important;
+    padding-right: max(14px, env(safe-area-inset-right)) !important;
+    gap: 8px !important;
+    row-gap: 10px !important;
+  }
+
+  .portal-dash-header > div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .portal-dash-user-email {
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .portal-dash-subtitle {
+    display: none;
+  }
+
+  .portal-dash-content {
+    padding: 20px 14px 28px !important;
+  }
+
+  .portal-dash-title-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .portal-dash-title-row button {
+    width: 100%;
+  }
+
+  .portal-stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .portal-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .portal-table-scroll table {
+    min-width: 560px;
+  }
+
+  .portal-invoice-topbar {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    min-height: 52px !important;
+    padding-top: max(10px, env(safe-area-inset-top)) !important;
+    padding-bottom: 10px !important;
+    padding-left: max(12px, env(safe-area-inset-left)) !important;
+    padding-right: max(12px, env(safe-area-inset-right)) !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+
+  .portal-invoice-topbar-actions {
+    width: 100%;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+  }
+
+  .portal-invoice-topbar-actions button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .portal-invoice-topbar-title {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .portal-invoice-content {
+    padding: 18px 12px 24px !important;
+  }
+
+  .portal-patient-grid {
+    grid-template-columns: 1fr !important;
+    padding: 18px 16px !important;
+    gap: 12px !important;
+  }
+
+  .portal-fi {
+    grid-column: 1 / -1 !important;
+  }
+
+  .portal-attest-strip {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 12px 16px !important;
+  }
+
+  .portal-attest-strip .portal-attest-input {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .portal-entries-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+
+  .portal-entries-scroll table {
+    min-width: 720px;
+  }
+
+  .portal-entries-card-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .portal-invoice-footer {
+    padding: 12px 0 28px !important;
+  }
+
+  .portal-invoice-footer button {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .portal-standalone-auth {
+    padding: 16px !important;
+    align-items: flex-start !important;
+    padding-top: max(24px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .portal-standalone-auth > div {
+    padding: 22px 18px !important;
+    border-radius: 12px !important;
+  }
+
+  .portal-cdtc-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .portal-dash-header .portal-dash-hide-xs {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
