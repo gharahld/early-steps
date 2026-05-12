@@ -79,6 +79,24 @@ npm install
 3. Paste the contents of `supabase/schema.sql` and run it
 4. Go to **Settings → API** and copy your **Project URL** and **anon public** key
 
+**Or use the Supabase CLI** (same SQL file, no copy-paste in the dashboard):
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) (e.g. `brew install supabase/tap/supabase`).
+2. `supabase login` — opens the browser to authorize.
+3. From the repo root, link this folder to your hosted project (project **ref** is the hostname segment in `https://YOUR_REF.supabase.co`):
+   ```bash
+   npm run supabase:link
+   ```
+   Or: `supabase link --project-ref YOUR_REF`
+4. Apply the full schema to the **linked** remote database:
+   ```bash
+   npm run db:apply:remote
+   ```
+   This runs `supabase db query -f supabase/schema.sql --linked` (Management API — you do not need the Postgres connection string).
+5. Confirm: `npm run check:supabase`
+
+The repo also has **`npm run db:push:remote`**, which only pushes **`supabase/migrations/*.sql`** to the remote migration history. That set is **not** the full portal schema by itself — prefer **`db:apply:remote`** unless you maintain a complete migration chain.
+
 **Disable email confirmation (recommended for local testing):** This is configured in the Supabase project, not in the app code.
 
 1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project.
@@ -134,7 +152,26 @@ After `.env.local` is filled in:
 npm run check:supabase
 ```
 
-This verifies the **URL + public key** and that the **`providers`** table exists (from `schema.sql`). It does not print secrets.
+This verifies **URL + public key**, **`providers`** and **`service_logs`** tables, and that **`signInWithPassword`** (the same path the app uses for login) talks to Auth correctly. It also verifies the **Edge sign-in** URL when `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true`.
+
+**Full login + DB wiring (recommended once you have a test user):** add to `.env.local` (never commit):
+
+```
+CHECK_SUPABASE_LOGIN_EMAIL=your-test@email.com
+CHECK_SUPABASE_LOGIN_PASSWORD=your-test-password
+```
+
+Then run `npm run check:supabase` again. It will sign in, confirm a **`providers`** row exists for that user (signup trigger / DB in sync), confirm **`service_logs`** is readable with the session, then sign out.
+
+**If login works in the app but this reports “no providers row”** for an older account, the user may exist in `auth.users` but not in `public.providers` (schema applied after signup, or trigger failed once). In Supabase **SQL Editor** (service role / dashboard), you can backfill:
+
+```sql
+insert into public.providers (id, full_name)
+select id, coalesce(raw_user_meta_data->>'full_name', split_part(email, '@', 1))
+from auth.users
+where id not in (select id from public.providers)
+on conflict (id) do nothing;
+```
 
 ### 5. Run the dev server
 

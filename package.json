@@ -13,7 +13,10 @@
     "lint": "next lint",
     "vercel:preview": "vercel",
     "vercel:prod": "vercel --prod",
-    "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs"
+    "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs",
+    "supabase:link": "supabase link",
+    "db:apply:remote": "supabase db query -f supabase/schema.sql --linked",
+    "db:push:remote": "supabase db push --linked"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",

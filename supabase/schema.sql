@@ -1,6 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Broward Early Steps — Supabase Schema
--- Run this in your Supabase SQL editor (Database → SQL Editor → New query)
+-- Run this in your Supabase SQL editor (Database → SQL Editor → New query),
+-- or from the repo: `npm run db:apply:remote` after `supabase link` (see README).
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── Providers (mirrors auth.users) ───────────────────────────────────────────
@@ -107,16 +108,19 @@ alter table public.service_logs  enable row level security;
 alter table public.service_entries enable row level security;
 
 -- Providers: each user sees only their own row
+drop policy if exists "providers: own row only" on public.providers;
 create policy "providers: own row only"
   on public.providers for all
   using (auth.uid() = id);
 
 -- Service logs: provider owns their logs
+drop policy if exists "service_logs: provider owns" on public.service_logs;
 create policy "service_logs: provider owns"
   on public.service_logs for all
   using (auth.uid() = provider_id);
 
 -- Service entries: accessible only through logs the provider owns
+drop policy if exists "service_entries: via log ownership" on public.service_entries;
 create policy "service_entries: via log ownership"
   on public.service_entries for all
   using (
