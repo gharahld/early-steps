@@ -154,6 +154,8 @@ After `.env.local` is filled in:
 npm run check:supabase
 ```
 
+To run **lint**, **production build**, and the Supabase check in one step: `npm run verify` (uses `.env.local` and network for the last step).
+
 This verifies **URL + public key**, **`providers`** and **`service_logs`** tables, and that **`signInWithPassword`** (the same path the app uses for login) talks to Auth correctly. It also verifies the **Edge sign-in** URL when `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true`.
 
 **Full login + DB wiring (recommended once you have a test user):** add to `.env.local` (never commit):
