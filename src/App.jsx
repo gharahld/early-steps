@@ -9,7 +9,10 @@ function Router() {
   const [view,     setView]     = useState('dashboard') // 'dashboard' | 'invoice'
   const [selected, setSelected] = useState(null)        // invoice being edited
 
-  if (loading) {
+  // Only block the shell while we do not know who is signed in. If `user` is already
+  // set (e.g. onAuthStateChange before getSession finishes), do not keep a full-screen
+  // spinner over the dashboard.
+  if (loading && !user) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontFamily: 'sans-serif', color: '#64748b' }}>
         Loading…

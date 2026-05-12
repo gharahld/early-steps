@@ -52,27 +52,47 @@ export function AuthProvider({ children }) {
     initialAuthHydrated.current = false
 
     let cancelled = false
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled) return
-      // Login may finish before this resolves; do not overwrite a user already set.
-      if (!initialAuthHydrated.current) {
-        initialAuthHydrated.current = true
-        setUser(session?.user ?? null)
-      } else if (session?.user) {
-        setUser(session.user)
-      }
-      setLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled) return
+        // Login may finish before this resolves; do not overwrite a user already set.
+        if (!initialAuthHydrated.current) {
+          initialAuthHydrated.current = true
+          setUser(session?.user ?? null)
+        } else if (session?.user) {
+          setUser(session.user)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        if (!initialAuthHydrated.current) {
+          initialAuthHydrated.current = true
+          setUser(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
       if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setUser(null)
+        setLoading(false)
         return
       }
       if (session?.user) {
         initialAuthHydrated.current = true
         setUser(session.user)
+        setLoading(false)
+        return
+      }
+      // First auth tick with no session — allow the shell to leave the spinner.
+      if (event === 'INITIAL_SESSION' && !initialAuthHydrated.current) {
+        initialAuthHydrated.current = true
+        setUser(null)
+        setLoading(false)
       }
     })
 
