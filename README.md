@@ -137,8 +137,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 Optional (same file):
 
 ```
-# NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true
+# NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true   # only after: npm run supabase:functions:deploy
 ```
+
+**`npm run check:supabase`** fails with **Edge sign-in 404** when this flag is `true` but the functions are not deployed yet — set the flag to `false` locally, or deploy then set `true`.
 
 **Git:** do not commit `.env.local` or any `.env*` file. Keep secrets in Vercel/hosting env or local files only.
 
