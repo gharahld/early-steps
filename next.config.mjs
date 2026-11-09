@@ -6,6 +6,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Fully client-side app: `next build` writes static files to ./out, served by Cloudflare Workers static assets.
+  output: 'export',
   // Avoid picking a parent-folder lockfile when this repo lives under another npm project.
   outputFileTracingRoot: path.join(__dirname),
 }

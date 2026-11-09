@@ -1,17 +1,22 @@
-# Broward Early Steps — Provider Invoice Portal
+# Broward Early Steps — Provider Forms Portal
 
-A production-ready **Next.js** + React + Supabase web app for Broward Early Steps therapy providers to log monthly service sessions, collect digital signatures, and generate CDTC-formatted PDF invoices.
+A **Next.js** + React web app for Broward Early Steps therapy providers to fill out, sign, download, and print two forms, each as its own PDF:
+
+- **Monthly Service Log / Invoice** — matches the V2024 Broward Early Steps form (8 visits per page; extra visits continue on another identical page).
+- **Daily SOAP Note** — matches the Grounded Ventures, LLC daily SOAP note.
+
+Everything runs in the browser: forms, drawn signatures, and the provider profile are saved in the browser's local storage on that device, and PDFs are generated client-side. There is no login and no backend.
 
 ---
 
 ## Tech Stack
 
-| Layer    | Technology                              |
-|----------|-----------------------------------------|
-| Frontend | React 18, **Next.js 15** (App Router)   |
-| Backend  | Supabase (Auth + PostgreSQL + RLS)      |
-| PDF      | jsPDF + jsPDF-AutoTable                 |
-| Hosting  | Vercel                                  |
+| Layer    | Technology                                        |
+|----------|---------------------------------------------------|
+| Frontend | React 18, **Next.js 15** (App Router, static export) |
+| Storage  | Browser `localStorage` (this device only)         |
+| PDF      | jsPDF                                             |
+| Hosting  | **Cloudflare Workers static assets**              |
 
 ---
 
@@ -20,324 +25,117 @@ A production-ready **Next.js** + React + Supabase web app for Broward Early Step
 ```
 early-steps/
 ├── public/
-│   └── favicon.svg
+│   ├── _headers                  # Security headers, CSP, caching (Cloudflare)
+│   ├── favicon.svg
+│   └── robots.txt
 ├── src/
 │   ├── app/
-│   │   ├── layout.jsx            # Root layout + metadata + Providers
+│   │   ├── layout.jsx            # Root layout + metadata + viewport
 │   │   ├── page.jsx              # Home (client shell → App)
-│   │   ├── error.jsx             # Route segment error UI
-│   │   ├── forgot-password/page.jsx
-│   │   ├── auth/update-password/page.jsx
-│   │   └── globals.css           # Global resets + scrollbar
+│   │   ├── error.jsx             # Error UI
+│   │   └── globals.css           # Global styles + mobile layout rules
 │   ├── components/
-│   │   ├── ui/index.jsx          # Button, Input, Badge, Card, StrengthBar
-│   │   └── SignaturePad.jsx      # Canvas-based signature input
-│   ├── context/
-│   │   └── AuthContext.jsx       # Supabase auth + 30-min session timeout
+│   │   ├── ui/index.jsx          # Button, Badge, Card, design tokens
+│   │   └── SignaturePad.jsx      # Draw-to-sign canvas (shows saved signatures)
 │   ├── hooks/
-│   │   └── useInvoices.js        # Fetch / save invoices via Supabase
+│   │   ├── useInvoices.js        # List / save invoices
+│   │   ├── useSoapNotes.js       # List / save SOAP notes
+│   │   └── useProviderProfile.js # Provider name, title, license
 │   ├── lib/
-│   │   ├── supabase.js           # Supabase client singleton
-│   │   ├── authEdge.js           # Optional: login/signup via rate-limited Edge Functions
-│   │   ├── rateLimiter.js        # Client-side rate limiting (5 attempts / 15 min)
-│   │   └── validators.js         # Email, password strength, input sanitizers
-│   ├── views/
-│   │   ├── AuthPage.jsx          # Login + signup
-│   │   ├── Dashboard.jsx         # Invoice list + stats
-│   │   └── InvoiceForm.jsx       # Form + signature + PDF generation
+│   │   ├── localStore.js         # localStorage persistence
+│   │   └── validators.js         # Input sanitizers
 │   ├── utils/
-│   │   └── pdfGenerator.js       # jsPDF invoice builder
-│   └── App.jsx                   # Client-side view switcher (dashboard / invoice)
-├── supabase/
-│   ├── schema.sql                # Full DB schema + RLS + auth_rate_events
-│   ├── config.toml               # Edge Function JWT settings (see below)
-│   └── functions/
-│       ├── auth-rate-limited-signin/
-│       └── auth-rate-limited-signup/
-├── .gitignore
-├── next.config.mjs
-├── package.json
-└── vercel.json
+│   │   ├── pdfGenerator.js       # V2024 invoice PDF + shared PDF helpers
+│   │   └── soapNotePdf.js        # Daily SOAP note PDF
+│   ├── views/
+│   │   ├── Dashboard.jsx         # Profile, invoice list, SOAP note list
+│   │   ├── InvoiceForm.jsx       # Invoice form + signatures
+│   │   └── SoapNoteForm.jsx      # SOAP note form + signature
+│   └── App.jsx                   # Client-side view switcher
+├── supabase/                     # Not used by the app (kept from the former Supabase backend)
+├── next.config.mjs               # output: 'export' → ./out
+├── wrangler.jsonc                # Cloudflare config (serves ./out)
+└── package.json
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Clone and install
-
 ```bash
-git clone <your-repo>
+git clone https://github.com/gharahld/early-steps.git
 cd early-steps
 npm install
+npm run dev          # http://localhost:3000
 ```
 
-### 2. Set up Supabase
+No environment variables are required.
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to **Database → SQL Editor → New query**
-3. Paste the contents of `supabase/schema.sql` and run it
-4. Go to **Settings → API** and copy your **Project URL** and **anon public** key
-
-**Or use the Supabase CLI** (same SQL file, no copy-paste in the dashboard):
-
-1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) (e.g. `brew install supabase/tap/supabase`).
-2. `supabase login` — opens the browser to authorize.
-3. From the repo root, link this folder to your hosted project (project **ref** is the hostname segment in `https://YOUR_REF.supabase.co`):
-   ```bash
-   npm run supabase:link
-   ```
-   Or: `supabase link --project-ref YOUR_REF`
-4. Apply the full schema to the **linked** remote database:
-   ```bash
-   npm run db:apply:remote
-   ```
-   This runs `supabase db query -f supabase/schema.sql --linked` (Management API — you do not need the Postgres connection string).
-5. Confirm: `npm run check:supabase`
-
-The repo also has **`npm run db:push:remote`**, which only pushes **`supabase/migrations/*.sql`** to the remote migration history. That set is **not** the full portal schema by itself — prefer **`db:apply:remote`** unless you maintain a complete migration chain.
-
-**Disable email confirmation (recommended for local testing):** This is configured in the Supabase project, not in the app code.
-
-1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project.
-2. Go to **Authentication** → **Providers** → **Email**.
-3. Turn **off** **Confirm email** (disable the toggle / uncheck the option—wording varies slightly by dashboard version).
-4. Save if the UI prompts you.
-
-After that, **sign up** returns a session immediately and the app can open the dashboard without inbox verification. **Turn Confirm email back on** before production if you want verified addresses.
-
-If you **keep** confirmation enabled: set **Authentication** → **URL Configuration** → **Site URL** to your dev URL (e.g. `http://localhost:3000`). New users see **Check your email** until they click the link.
-
-**Signup fails with a database error:** If you applied an older `schema.sql`, the `handle_new_user` trigger could fail because **RLS on `providers`** checks `auth.uid()`, which is **null** inside the auth trigger—so the provider row never inserts and signup rolls back. Re-run the **`handle_new_user`** definition from the current `supabase/schema.sql` (or migration `supabase/migrations/20260509140000_fix_providers_trigger_rls.sql`) in the SQL Editor.
-
-**Sign up then can’t sign in:** If **Confirm email** is on in Supabase, you must open the link in the email before password sign-in works. The app shows **Account created — check your email** after sign-up; then use **Sign in** with the same email and password. If sign-in still fails, confirm **Site URL** and **Redirect URLs** in Supabase include your app origin (e.g. `http://localhost:3000`). If auth behaves oddly with the newer **publishable** key, try the legacy **JWT anon** key in `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead.
-
-### 3. Configure environment
-
-Create **`.env.local`** in the project root (it is gitignored).
-
-**Why `NEXT_PUBLIC_`?** That prefix is **Next.js** (not Supabase). It marks variables that may be used in the browser bundle. The **values** still come from Supabase → **Settings → API**.
-
-**Required:**
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-```
-
-**Public key — use one of these** (Supabase shows one or both in the API settings):
-
-```
-# Legacy JWT “anon” / “public” key (starts with eyJ…)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-
-# Or newer publishable key (starts with sb_publishable_…)
-# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-```
-
-Optional (same file):
-
-```
-# NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true   # only after: npm run supabase:functions:deploy
-```
-
-**`npm run check:supabase`** fails with **Edge sign-in 404** when this flag is `true` but the functions are not deployed yet — set the flag to `false` locally, or deploy then set `true`.
-
-**Git:** do not commit `.env.local` or any `.env*` file. Keep secrets in Vercel/hosting env or local files only.
-
-If you previously used Vite, rename **`VITE_*`** → **`NEXT_PUBLIC_*`**.
-
-### 4. Test Supabase from the CLI
-
-After `.env.local` is filled in:
-
-```bash
-npm run check:supabase
-```
-
-To run **lint**, **production build**, and the Supabase check in one step: `npm run verify` (uses `.env.local` and network for the last step).
-
-This verifies **URL + public key**, **`providers`** and **`service_logs`** tables, and that **`signInWithPassword`** (the same path the app uses for login) talks to Auth correctly. It also verifies the **Edge sign-in** URL when `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true`.
-
-**Full login + DB wiring (recommended once you have a test user):** add to `.env.local` (never commit):
-
-```
-CHECK_SUPABASE_LOGIN_EMAIL=your-test@email.com
-CHECK_SUPABASE_LOGIN_PASSWORD=your-test-password
-```
-
-Then run `npm run check:supabase` again. It will sign in, confirm a **`providers`** row exists for that user (signup trigger / DB in sync), confirm **`service_logs`** is readable with the session, then sign out.
-
-**If login works in the app but this reports “no providers row”** for an older account, the user may exist in `auth.users` but not in `public.providers` (schema applied after signup, or trigger failed once). In Supabase **SQL Editor** (service role / dashboard), you can backfill:
-
-```sql
-insert into public.providers (id, full_name)
-select id, coalesce(raw_user_meta_data->>'full_name', split_part(email, '@', 1))
-from auth.users
-where id not in (select id from public.providers)
-on conflict (id) do nothing;
-```
-
-### 5. Run the dev server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
-### 6. (Recommended for production) Server-side auth rate limits
-
-The UI still applies a **client-side** lockout for responsiveness. To enforce **the same limits on the server** (so clearing storage or switching browsers does not reset the window):
-
-1. Ensure `supabase/schema.sql` has been applied **after** the block that creates `auth_rate_events` (re-run that section if your DB predates it).
-2. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then link and deploy:
-   ```bash
-   supabase link --project-ref your-project-ref
-   supabase functions deploy auth-rate-limited-signin
-   supabase functions deploy auth-rate-limited-signup
-   ```
-   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically on hosted functions.
-3. Set in `.env.local` (and in Vercel for production):
-   ```
-   NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true
-   ```
-4. Rebuild (`npm run build`). If this flag is **unset** or **false**, the app uses **direct** `signIn` / `signUp` (client-only throttling).
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Development server with hot reload |
+| `npm run lint` | ESLint |
+| `npm run build` | Static export to `out/` |
+| `npm run verify` | Lint + build |
+| `npm run preview` | Build, then serve `out/` with Wrangler at http://localhost:8787 (same headers as production) |
+| `npm run deploy` | Build, then deploy to Cloudflare with Wrangler (first time: `npx wrangler login`) |
 
 ---
 
-## Security Features
+## Using the App
 
-### Authentication
-- **Generic error messages** — never reveals whether an email exists
-- **Password strength meter** — enforces minimum complexity on signup
-- **Show/hide password toggle** — reduces caps-lock mistakes
-- **Correct `autoComplete` attributes** — `current-password` vs `new-password`
+1. **Provider Profile** (home screen): enter name, title, and license # once; they fill in automatically on new forms.
+2. **+ New Invoice** or **+ New SOAP Note**: fill in what you need — nothing is required.
+3. Signatures (provider, caregiver per visit, therapist) are optional and drawn on the device. Unsigned lines print blank so they can be signed by hand.
+4. **Download PDF** / **Print PDF** save the form and output it; **Submit & Download** marks an invoice as submitted.
 
-### Rate Limiting
-- **5 failed attempts per email per 15-minute window** before lockout (same window for client UX and optional Edge enforcement)
-- **Live countdown** shown to the user (client-side UX)
-- **Separate buckets** for login vs signup attempts
-- **Optional server-side enforcement** — deploy `auth-rate-limited-signin` / `auth-rate-limited-signup` and set `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true` (see Quick Start §6). For multi-region or very high volume, consider adding Redis-backed counters later.
-
-### Password reset
-- **Forgot password** — `/forgot-password` sends `resetPasswordForEmail` with `redirectTo` …`/auth/update-password` (same generic messaging whether the email exists).
-- **New password** — `/auth/update-password` accepts the Supabase recovery session and calls `updateUser({ password })`, then signs out and returns the user to `/`.
-
-### Session Management
-- **30-minute inactivity timeout** — logs out on idle
-- **Activity detection** — resets on mouse, keyboard, touch events
-- **Supabase JWT auto-refresh** — tokens renewed before expiry
-- **Explicit logout confirmation** — prevents accidental sign-out
-
-### Input Handling
-- All emails trimmed, lowercased, and capped at 254 chars before DB writes
-- All name/text fields strip `<>"'&` to prevent stored XSS
-- `maxLength` enforced on all password fields (128) and emails (254)
-- React JSX auto-escapes all rendered values — no `dangerouslySetInnerHTML`
-
-### Database (Supabase RLS)
-- Row-Level Security enabled on all tables
-- `service_logs` policy: `provider_id = auth.uid()` — own rows only
-- `service_entries` policy: accessible only through logs you own
-- Even a valid JWT cannot read another provider's data
-
-### Content Security Policy
-- Next.js does not ship a strict CSP meta tag by default (hydration and inline chunks need careful nonce-based CSP). Add a **nonce-based** or platform-level CSP when you harden further; `vercel.json` still sets other security headers.
+The biller attestation and the **CDTC Fiscal Processing** table print blank for office use.
 
 ---
 
-## Deployment (Vercel)
+## Data & Privacy
 
-Vercel runs **`next build`** for this repo. **`vercel.json`** sets `framework: nextjs`, **`npm ci`** for installs, and security + cache headers for `/_next/static/*`. **`.nvmrc`** requests Node **20** (confirm under **Project → Settings → General → Node.js Version** if builds pick the wrong runtime).
+- Data is stored **only in the browser on the device** where it was entered. It does not sync between devices.
+- Clearing browser data deletes saved forms — keep the downloaded PDFs as the record.
+- Anyone using the same browser can open saved forms; use a device and browser account dedicated to the provider.
+- Signatures are stored as PNG data URLs and rendered only as images (never as HTML).
 
-### Option A — Dashboard (recommended first time)
+---
 
-1. Sign in at [vercel.com](https://vercel.com) and open **[Add New… → Project](https://vercel.com/new)**.
-2. **Import** the GitHub repo **`gharahld/early-steps`** (install the Vercel GitHub app for the org if prompted).
-3. Leave **Framework Preset** as **Next.js**, **Root Directory** as **`.`**, build/output commands as defaults (Vercel will run `npm run build`).
-4. Expand **Environment Variables** and add (same names as **§3 Configure environment**):
-   - `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL  
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` **or** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — whichever Supabase shows under API (never the service role)  
-   - Optional: `NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS` = `true` if Edge auth is deployed  
-   Apply to **Production** and **Preview** (and **Development** if you use Vercel’s dev integration) so preview deployments can call Supabase.
-5. Click **Deploy**. After the first deploy, open **Domains** and note your production URL (and `*.vercel.app` preview URLs).
+## Deployment (Cloudflare)
 
-### Option B — Vercel CLI
+`next build` produces a static site in `out/`, served by [Cloudflare Workers static assets](https://developers.cloudflare.com/workers/static-assets/). There is no Worker script, binding, or secret.
 
-Requires a valid login (`vercel whoami` should succeed).
+- `wrangler.jsonc` — Worker name `early-steps-portal`, assets directory `./out`, unknown paths return `404.html`.
+- `public/_headers` — `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, Content-Security-Policy, `noindex`, and immutable caching for `/_next/static/*`.
 
-```bash
-vercel login          # once, if token is missing or invalid
-cd early-steps
-vercel link           # connect this folder to a Vercel project (create new or link existing)
-npm run vercel:preview   # preview deployment
-npm run vercel:prod    # production deployment
-```
+**Automatic deploys from GitHub (Workers Builds):** the Cloudflare Worker is connected to `gharahld/early-steps`; each push to `main` runs:
 
-Local build check (same as CI / Vercel build):
+| Setting | Value |
+| --- | --- |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
 
-```bash
-npm ci && npm run build
-```
+**Manual deploy:** `npm run deploy`.
 
-**Supabase — URLs (required for auth + password reset):**
-
-1. **Site URL** — your primary production origin (e.g. `https://portal.example.org`).
-2. **Redirect URLs** — add every origin that may complete auth or recovery in the browser, for example:
-   - `http://localhost:3000/**` (or `http://localhost:3000` and paths as your Supabase version allows)
-   - `https://your-production-domain.com/**`
-   - Each Vercel preview host you use, e.g. `https://your-app-git-branch-team.vercel.app/**`
-
-Password reset emails use **`/auth/update-password`** as the return path. Ensure URLs like:
-
-- `http://localhost:3000/auth/update-password`
-- `https://<your-production-host>/auth/update-password`
-- `https://<preview-host>/auth/update-password`
-
-are allowed (wildcard patterns depend on your Supabase project settings; when in doubt, add explicit URLs).
-
-### Production troubleshooting: “Signed up / signed in but no dashboard”
-
-The shell on `/` shows **Dashboard** only when Supabase auth has set a **`user`** in React state. There is no separate `/dashboard` URL.
-
-1. **Still on the login form after “Sign in”** — Session never stuck in the app. Typical causes:
-   - **Vercel env** — `NEXT_PUBLIC_SUPABASE_URL` and one of `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` must match the **same** Supabase project you used when creating the user. Redeploy after changing env vars (values are inlined at build time).
-   - **`NEXT_PUBLIC_AUTH_VIA_EDGE_FUNCTIONS=true`** — Deploy **`auth-rate-limited-signin`** (and signup if used) and ensure **`public.auth_rate_events`** exists (from `supabase/schema.sql`). If the function returns 404/500, sign-in fails or never completes. Easiest narrow test: set this flag to **`false`** on Vercel and redeploy so the browser uses direct `signInWithPassword` (keep Edge off until functions + tables are verified).
-   - **Email confirmation** — If **Confirm email** is on, the user must click the link before password sign-in returns a session (see §2 above).
-
-2. **Stuck on full-screen “Loading…”** — Initial session is taking too long or failing before `user` is set. Hard-refresh once; if it persists, check the browser **Console** and **Network** tab for blocked requests to your Supabase host.
-
-3. **Dashboard appears but “Failed to load invoices”** — The user **is** signed in; fix database/RLS: run **`supabase/schema.sql`** on the project and confirm `npm run check:supabase` passes.
-
-**Search engines:** `metadata.robots` and `public/robots.txt` discourage indexing this internal portal.
-
-**Repo CI:** A workflow template lives at **`ops/github-actions-ci.yml`**. Copy it to **`.github/workflows/ci.yml`** to enable Actions on push/PR to `main`/`master` (lint + build with placeholder `NEXT_PUBLIC_*` vars). If GitHub rejects pushing workflow files over HTTPS, use a credential with the **`workflow`** OAuth scope (e.g. `gh auth refresh -s workflow`) or add the file via the GitHub web UI once.
-
-**Node:** Use **Node 20+** locally and on Vercel (`package.json` `engines`).
+Site URL: `https://early-steps-portal.<your-subdomain>.workers.dev`. Add a custom domain under **Workers & Pages → early-steps-portal → Settings → Domains & Routes**.
 
 ---
 
 ## PDF Output
 
-Clicking **Submit & Download PDF** produces a letter-size PDF with:
+| Form | Filename |
+| --- | --- |
+| Monthly Service Log / Invoice | `ES_Invoice_[ChildName]_[BillingMonth].pdf` |
+| Daily SOAP Note | `SOAP_Note_[Child]_[Date].pdf` |
 
-- Dark header with provider and billing month
-- Patient & billing info grid
-- Attestation banner
-- Service entries table (auto-table with alternating rows)
-- Procedure / location legend
-- Provider name + drawn signature image
-- CDTC Fiscal Processing section (blank for admin)
-- Page numbers in footer
-
-Filename format: `ES_Invoice_[ChildName]_[BillingMonth].pdf`
+Both are US Letter, laid out from scans of the paper forms. PDFs ask viewers to print at 100% (`PrintScaling: None`); if a printout looks shrunk, choose **Actual size** in the print dialog.
 
 ---
 
 ## TODO / Future Enhancements
 
-- [ ] Optional Redis / shared store for rate limits across many Edge regions
-- [ ] Admin view with CDTC fiscal fields editable
-- [ ] Email notifications on invoice submission
-- [ ] Audit log table for compliance
-- [ ] Mobile-responsive service entry table
+- [ ] Admin view with biller attestation and CDTC fiscal fields editable
+- [ ] Optional sync/backup across devices (requires a backend and login)
+- [ ] Export / import of saved forms

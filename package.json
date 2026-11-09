@@ -9,11 +9,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
     "lint": "next lint",
-    "verify": "npm run lint && npm run build && npm run check:supabase",
-    "vercel:preview": "vercel",
-    "vercel:prod": "vercel --prod",
+    "verify": "npm run lint && npm run build",
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "check:supabase": "node --env-file=.env.local ./scripts/check-supabase.mjs",
     "supabase:link": "supabase link",
     "db:apply:remote": "supabase db query -f supabase/schema.sql --linked",
@@ -32,6 +31,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^15.1.0"
+    "eslint-config-next": "^15.1.0",
+    "wrangler": "^4.158.0"
   }
 }

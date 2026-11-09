@@ -10,8 +10,9 @@ dist/
 out/
 build/
 
-# Vercel link metadata (can include project/org identifiers)
-.vercel/
+# Wrangler local state and local secrets
+.wrangler/
+.dev.vars*
 
 # Turbopack (if enabled)
 .turbo/
@@ -57,4 +58,3 @@ Desktop.ini
 
 # Optional: local scratch (uncomment if you use this name)
 # scratch/
-.vercel

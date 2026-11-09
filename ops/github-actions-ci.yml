@@ -3,8 +3,7 @@
 # (e.g. `gh auth refresh -s workflow` or a PAT). This copy lives outside .github/
 # so the rest of the repo can be pushed without that scope.
 
-# Lint and production build on every push/PR. Uses placeholder Supabase vars so
-# `src/lib/supabase.js` can initialize during `next build` (real keys come from Vercel/env at deploy).
+# Lint and static-export build on every push/PR. No environment variables are needed.
 name: CI
 
 on:
@@ -31,7 +30,4 @@ jobs:
         run: npm run lint
 
       - name: Build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ci-placeholder-not-for-real-use
         run: npm run build

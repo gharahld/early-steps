@@ -33,7 +33,7 @@ alwaysApply: true
 - **Auth/data bugs:** trace **client → Supabase → RLS policies**; fix root cause, not only UI.
 - **Bug reports:** use logs/errors/tests; fix autonomously when possible—minimize back-and-forth.
 - **Elegance:** for non-trivial fixes, ask if there is a cleaner approach; skip bikeshedding on obvious one-liners.
-- **Cross-layer:** consider impact on **auth**, **RLS**, **PDF output**, and **CSP / headers** (`next.config.mjs`, `vercel.json`) when touching fetches or new origins.
+- **Cross-layer:** consider impact on **auth**, **RLS**, **PDF output**, and **CSP / headers** (`next.config.mjs`, `public/_headers`, `wrangler.jsonc`) when touching fetches or new origins.
 
 ## Optional task files
 - For larger efforts, you may use `tasks/todo.md` and `tasks/lessons.md` **if they exist or if the user wants them**. Do not treat them as mandatory for every small change.
