@@ -1,11 +1,34 @@
 import { useRef } from 'react'
 import { T } from './ui/index.jsx'
 
-export function SignaturePad({ onSigned, onClear, height = 140, ariaDescribedBy, ariaLabelledby }) {
+const clearButtonStyle = {
+  marginTop: '8px', padding: '5px 14px', borderRadius: '6px',
+  fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+  background: T.dangerBg, color: T.danger, border: `1px solid ${T.dangerBorder}`,
+}
+
+/** Draw-to-sign canvas. When `value` (a PNG data URL) is set, shows that saved signature instead. */
+export function SignaturePad({ value, onSigned, onClear, height = 140, ariaDescribedBy, ariaLabelledby }) {
   const canvasRef = useRef(null)
   const drawing   = useRef(false)
   const hasMark   = useRef(false)
   const h = Math.max(80, Math.min(320, Number(height) || 140))
+
+  if (value) {
+    return (
+      <div>
+        <div style={{
+          border: `1.5px solid ${T.border}`, borderRadius: '8px', background: '#fafafa',
+          height: `${h}px`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- in-browser data URL; next/image cannot optimize it */}
+          <img src={value} alt="Saved signature" aria-labelledby={ariaLabelledby || undefined}
+            style={{ maxWidth: '100%', maxHeight: '100%' }} />
+        </div>
+        <button type="button" onClick={onClear} style={clearButtonStyle}>Clear Signature</button>
+      </div>
+    )
+  }
 
   const getPos = (e, canvas) => {
     const rect = canvas.getBoundingClientRect()
@@ -79,17 +102,7 @@ export function SignaturePad({ onSigned, onClear, height = 140, ariaDescribedBy,
           Sign here with your mouse or finger
         </div>
       </div>
-      <button
-        type="button"
-        onClick={clear}
-        style={{
-          marginTop: '8px', padding: '5px 14px', borderRadius: '6px',
-          fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-          background: T.dangerBg, color: T.danger, border: `1px solid ${T.dangerBorder}`,
-        }}
-      >
-        Clear Signature
-      </button>
+      <button type="button" onClick={clear} style={clearButtonStyle}>Clear Signature</button>
     </div>
   )
 }

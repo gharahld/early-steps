@@ -1,45 +1,34 @@
 import { useState } from 'react'
-import { useAuth } from './context/AuthContext.jsx'
-import { AuthPage }   from './views/AuthPage.jsx'
-import { Dashboard }  from './views/Dashboard.jsx'
-import { InvoiceForm } from './views/InvoiceForm.jsx'
+import { useProviderProfile } from './hooks/useProviderProfile.js'
+import { Dashboard }    from './views/Dashboard.jsx'
+import { InvoiceForm }  from './views/InvoiceForm.jsx'
+import { SoapNoteForm } from './views/SoapNoteForm.jsx'
 
-function Router() {
-  const { user, loading } = useAuth()
-  const [view,     setView]     = useState('dashboard') // 'dashboard' | 'invoice'
-  const [selected, setSelected] = useState(null)        // invoice being edited
+export default function App() {
+  const { profile, loaded, saveProfile } = useProviderProfile()
+  const [view,     setView]     = useState('dashboard') // 'dashboard' | 'invoice' | 'soap'
+  const [selected, setSelected] = useState(null)        // invoice or SOAP note being edited
 
-  // Only block the shell while we do not know who is signed in. If `user` is already
-  // set (e.g. onAuthStateChange before getSession finishes), do not keep a full-screen
-  // spinner over the dashboard.
-  if (loading && !user) {
-    return (
-      <div className="portal-app-loading" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', fontFamily: 'sans-serif', color: '#64748b' }}>
-        Loading…
-      </div>
-    )
-  }
-
-  if (!user) return <AuthPage />
+  const open = (nextView, item = null) => { setSelected(item); setView(nextView) }
+  const back = () => open('dashboard')
 
   if (view === 'invoice') {
-    return (
-      <InvoiceForm
-        key={selected?.id ?? 'new'}
-        initialData={selected}
-        onBack={() => { setView('dashboard'); setSelected(null) }}
-      />
-    )
+    return <InvoiceForm key={selected?.id ?? 'new'} initialData={selected} profile={profile} onBack={back} />
+  }
+
+  if (view === 'soap') {
+    return <SoapNoteForm key={selected?.id ?? 'new'} initialData={selected} profile={profile} onBack={back} />
   }
 
   return (
     <Dashboard
-      onNewInvoice={() => { setSelected(null); setView('invoice') }}
-      onOpenInvoice={inv => { setSelected(inv); setView('invoice') }}
+      profile={profile}
+      profileLoaded={loaded}
+      onSaveProfile={saveProfile}
+      onNewInvoice={() => open('invoice')}
+      onOpenInvoice={inv => open('invoice', inv)}
+      onNewSoapNote={() => open('soap')}
+      onOpenSoapNote={note => open('soap', note)}
     />
   )
-}
-
-export default function App() {
-  return <Router />
 }

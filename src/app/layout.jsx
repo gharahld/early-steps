@@ -1,5 +1,4 @@
 import './globals.css'
-import { Providers } from './providers.jsx'
 
 export const metadata = {
   title: 'Early Steps Provider Portal',
@@ -18,9 +17,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
