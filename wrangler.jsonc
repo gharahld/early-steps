@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "early-steps-portal",
+  "name": "early-steps",
   "compatibility_date": "2026-11-08",
   // Static site only: no Worker script. `npm run build` writes the export to ./out.
   "assets": {

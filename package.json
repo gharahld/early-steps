@@ -4,7 +4,7 @@
   "description": "Broward Early Steps – Therapy Provider Invoice Portal",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev",

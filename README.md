@@ -106,7 +106,8 @@ The biller attestation and the **CDTC Fiscal Processing** table print blank for 
 
 `next build` produces a static site in `out/`, served by [Cloudflare Workers static assets](https://developers.cloudflare.com/workers/static-assets/). There is no Worker script, binding, or secret.
 
-- `wrangler.jsonc` — Worker name `early-steps-portal`, assets directory `./out`, unknown paths return `404.html`.
+- `wrangler.jsonc` — Worker name `early-steps` (must match the Worker name in Cloudflare), assets directory `./out`, unknown paths return `404.html`.
+- `.nvmrc` pins **Node 22**, which Wrangler 4 requires; Workers Builds reads it to pick the build image's Node version.
 - `public/_headers` — `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, Content-Security-Policy, `noindex`, and immutable caching for `/_next/static/*`.
 
 **Automatic deploys from GitHub (Workers Builds):** the Cloudflare Worker is connected to `gharahld/early-steps`; each push to `main` runs:
@@ -119,7 +120,7 @@ The biller attestation and the **CDTC Fiscal Processing** table print blank for 
 
 **Manual deploy:** `npm run deploy`.
 
-Site URL: `https://early-steps-portal.<your-subdomain>.workers.dev`. Add a custom domain under **Workers & Pages → early-steps-portal → Settings → Domains & Routes**.
+Site URL: `https://early-steps.gharahld19-a04.workers.dev`. Add a custom domain under **Workers & Pages → early-steps → Settings → Domains & Routes**.
 
 ---
 
