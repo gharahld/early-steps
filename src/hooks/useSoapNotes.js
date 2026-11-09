@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getSoapNote, listSoapNotes, upsertSoapNote } from '../lib/localStore.js'
+import { deleteSoapNote, getSoapNote, listSoapNotes, upsertSoapNote } from '../lib/localStore.js'
 
 /** Hook for listing and saving Daily SOAP Notes stored in this browser. */
 export function useSoapNotes() {
@@ -42,5 +42,10 @@ export function useSoapNotes() {
 
   const fetchNoteById = useCallback(async (noteId) => (noteId ? getSoapNote(noteId) : null), [])
 
-  return { notes, loading, error, saveNote, fetchNoteById }
+  const deleteNote = useCallback(async (noteId) => {
+    deleteSoapNote(noteId)
+    await fetchNotes()
+  }, [fetchNotes])
+
+  return { notes, loading, error, saveNote, deleteNote, fetchNoteById }
 }

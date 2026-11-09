@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { openBlobInNewTab } from './pdfActions.js'
 
 /*
  * Layout coordinates are pixel positions measured on the V2024 Broward Early Steps
@@ -378,15 +379,7 @@ export function buildInvoicePdfDocument({ header, entries, signatureDataUrl }) {
 
 /** Opens a built PDF in a new tab for printing; falls back to download if popups are blocked. */
 export function openPdfInNewTab(doc, filename) {
-  const url = URL.createObjectURL(doc.output('blob'))
-  const opened = window.open(url, '_blank')
-  if (!opened) {
-    URL.revokeObjectURL(url)
-    doc.save(filename)
-    return
-  }
-  opened.opener = null
-  setTimeout(() => URL.revokeObjectURL(url), 120_000)
+  openBlobInNewTab(doc.output('blob'), filename)
 }
 
 /** @param {{ header: object, entries: object[], signatureDataUrl?: string }} params */

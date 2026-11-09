@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { useSoapNotes } from '../hooks/useSoapNotes.js'
+import { useSavedPdfs } from '../hooks/useSavedPdfs.js'
 import { SignaturePad } from '../components/SignaturePad.jsx'
 import { buildSoapNotePdfDocument, openSoapNotePdfForPrint, soapNoteFilename } from '../utils/soapNotePdf.js'
 import { Button, Badge, T } from '../components/ui/index.jsx'
@@ -41,6 +42,7 @@ function noteFromStored(row) {
 
 export function SoapNoteForm({ initialData, profile, onBack }) {
   const { saveNote, fetchNoteById } = useSoapNotes()
+  const { savePdf } = useSavedPdfs({ load: false })
   const [note, setNote]           = useState(EMPTY_NOTE)
   const [therapist, setTherapist] = useState(profile)
   const [signature, setSignature] = useState(null)
@@ -67,22 +69,39 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
   const set = (field, value) => setNote(n => ({ ...n, [field]: value }))
   const pdfParams = () => ({ note, therapist, signatureDataUrl: signature })
   const therapistLine = [therapist.name, therapist.title, therapist.license].filter(Boolean).join(' ')
+  /** Saves the note; returns its id, or null on failure. */
   const save = async () => {
     setError('')
     try {
       const saved = await saveNote({ id: noteId, note, therapist, signature })
       setNoteId(saved.id)
-      return true
+      return saved.id
     } catch (err) {
       setError(err.message || 'Failed to save. Please try again.')
       setStatus('error')
-      return false
+      return null
     }
   }
 
   const flash = (s) => { setStatus(s); setTimeout(() => setStatus('idle'), 3000) }
 
   const handleSave = async () => { if (await save()) flash('saved') }
+
+  const handleSavePdf = async () => {
+    const id = await save()
+    if (!id) return
+    try {
+      await savePdf({
+        kind: 'soap', formId: id,
+        title: note.childName || 'Unnamed child', period: note.date || '',
+        filename: soapNoteFilename(note), blob: buildSoapNotePdfDocument(pdfParams()).output('blob'),
+      })
+      flash('pdf-saved')
+    } catch (err) {
+      setError(err.message || 'Could not save the PDF.')
+      setStatus('error')
+    }
+  }
 
   const handleDownload = async () => {
     if (!(await save())) return
@@ -118,10 +137,12 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
           <span role="status" aria-live="polite" style={{ display: 'contents' }}>
             {status === 'saved'      && <Badge color="green">✓ Saved</Badge>}
             {status === 'downloaded' && <Badge color="green">✓ PDF Downloaded</Badge>}
+            {status === 'pdf-saved'  && <Badge color="green">✓ Added to Saved PDFs</Badge>}
             {status === 'error'      && <Badge color="red">Save failed</Badge>}
           </span>
           <Button onClick={handleSave} variant="secondary" size="sm" disabled={loading}>Save</Button>
-          <Button onClick={handleDownload} size="sm" disabled={loading}>⬇ Download PDF</Button>
+          <Button onClick={handleSavePdf} size="sm" disabled={loading}>Save as PDF</Button>
+          <Button onClick={handleDownload} variant="secondary" size="sm" disabled={loading}>⬇ Download PDF</Button>
           <Button onClick={handlePrint} variant="secondary" size="sm" disabled={loading}>Print PDF</Button>
         </div>
       </div>
@@ -195,7 +216,8 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
             </div>
 
             <div className="portal-invoice-footer" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', padding: '16px 0 32px' }}>
-              <Button onClick={handleDownload} style={{ padding: '14px 32px', fontSize: '15px' }}>⬇ Download SOAP Note PDF</Button>
+              <Button onClick={handleSavePdf} style={{ padding: '14px 32px', fontSize: '15px' }}>Save as PDF</Button>
+              <Button onClick={handleDownload} variant="secondary" style={{ padding: '14px 32px', fontSize: '15px' }}>⬇ Download SOAP Note PDF</Button>
               <Button onClick={handlePrint} variant="secondary" style={{ padding: '14px 28px', fontSize: '15px' }}>Print SOAP Note</Button>
             </div>
           </>

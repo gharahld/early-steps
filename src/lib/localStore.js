@@ -61,6 +61,14 @@ export function getInvoice(id) {
   return read(KEYS.invoices, []).find(log => log.id === id) ?? null
 }
 
+function deleteRow(key, id) {
+  write(key, read(key, []).filter(r => r.id !== id))
+}
+
+export function deleteInvoice(id) {
+  deleteRow(KEYS.invoices, id)
+}
+
 /** Insert or update a log and replace all of its entries. */
 export function upsertInvoice(id, logFields, entryRows) {
   const logId = id || crypto.randomUUID()
@@ -84,6 +92,10 @@ export function getSoapNote(id) {
 
 export function upsertSoapNote(id, fields) {
   return upsertRow(KEYS.soapNotes, id, fields)
+}
+
+export function deleteSoapNote(id) {
+  deleteRow(KEYS.soapNotes, id)
 }
 
 // ── Provider profile ──────────────────────────────────────────────────────────

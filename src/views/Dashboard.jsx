@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { useInvoices } from '../hooks/useInvoices.js'
 import { useSoapNotes } from '../hooks/useSoapNotes.js'
 import { Button, Badge, Card, CardHeader, T } from '../components/ui/index.jsx'
+import { SavedPdfsCard } from '../components/SavedPdfsCard.jsx'
 
 const thStyle = {
   padding: '10px 16px', textAlign: 'left', fontSize: '11px',
@@ -81,8 +82,12 @@ function ListState({ loading, error, colSpan, emptyText }) {
 }
 
 export function Dashboard({ profile, profileLoaded, onSaveProfile, onNewInvoice, onOpenInvoice, onNewSoapNote, onOpenSoapNote }) {
-  const { invoices, loading: invLoading, error: invError } = useInvoices()
-  const { notes, loading: soapLoading, error: soapError } = useSoapNotes()
+  const { invoices, loading: invLoading, error: invError, deleteInvoice } = useInvoices()
+  const { notes, loading: soapLoading, error: soapError, deleteNote } = useSoapNotes()
+
+  const confirmDelete = (what, remove) => {
+    if (window.confirm(`Delete ${what}? This can’t be undone. A PDF already in Saved PDFs stays there until you delete it.`)) remove()
+  }
 
   const now = new Date()
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -145,6 +150,8 @@ export function Dashboard({ profile, profileLoaded, onSaveProfile, onNewInvoice,
           ))}
         </div>
 
+        <SavedPdfsCard />
+
         {/* ── Monthly service log / invoices ──────────────────────────────── */}
         <Card style={{ marginBottom: '16px' }}>
           <CardHeader right={<Button onClick={onNewInvoice} size="sm">+ New Invoice</Button>}>
@@ -173,9 +180,14 @@ export function Dashboard({ profile, profileLoaded, onSaveProfile, onNewInvoice,
                     </td>
                     <td style={tdStyle}>{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}</td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
-                      <Button onClick={() => onOpenInvoice(inv)} variant="secondary" size="sm">
-                        {inv.status === 'draft' ? 'Continue' : 'View'}
-                      </Button>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <Button onClick={() => onOpenInvoice(inv)} variant="secondary" size="sm">
+                          {inv.status === 'draft' ? 'Continue' : 'View'}
+                        </Button>
+                        <Button onClick={() => confirmDelete(`the invoice for ${inv.child_name || 'this child'}`, () => deleteInvoice(inv.id))} variant="danger" size="sm">
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -209,7 +221,12 @@ export function Dashboard({ profile, profileLoaded, onSaveProfile, onNewInvoice,
                       <Badge color={note.signature ? 'green' : 'amber'}>{note.signature ? 'Signed' : 'Not signed'}</Badge>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
-                      <Button onClick={() => onOpenSoapNote(note)} variant="secondary" size="sm">Open</Button>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <Button onClick={() => onOpenSoapNote(note)} variant="secondary" size="sm">Open</Button>
+                        <Button onClick={() => confirmDelete(`the SOAP note for ${note.child_name || 'this child'}${note.date ? ` on ${formatDate(note.date)}` : ''}`, () => deleteNote(note.id))} variant="danger" size="sm">
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

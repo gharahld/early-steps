@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getInvoice, listInvoices, upsertInvoice } from '../lib/localStore.js'
+import { deleteInvoice as removeInvoice, getInvoice, listInvoices, upsertInvoice } from '../lib/localStore.js'
 import { isEntryFilled } from '../utils/pdfGenerator.js'
 
 /** Hook for listing and saving service logs stored in this browser. */
@@ -62,5 +62,10 @@ export function useInvoices() {
 
   const fetchInvoiceById = useCallback(async (logId) => (logId ? getInvoice(logId) : null), [])
 
-  return { invoices, loading, error, saveInvoice, refetch: fetchInvoices, fetchInvoiceById }
+  const deleteInvoice = useCallback(async (logId) => {
+    removeInvoice(logId)
+    await fetchInvoices()
+  }, [fetchInvoices])
+
+  return { invoices, loading, error, saveInvoice, deleteInvoice, refetch: fetchInvoices, fetchInvoiceById }
 }

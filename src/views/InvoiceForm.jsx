@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useInvoices } from '../hooks/useInvoices.js'
+import { useSavedPdfs } from '../hooks/useSavedPdfs.js'
 import { SignaturePad } from '../components/SignaturePad.jsx'
 import { buildInvoicePdfDocument, invoicePdfFilename, isEntryFilled, openInvoicePdfForPrint } from '../utils/pdfGenerator.js'
 import { Button, Badge, T } from '../components/ui/index.jsx'
@@ -70,8 +71,9 @@ function mapStoredEntriesToForm(rows) {
 
 export function InvoiceForm({ initialData, profile, onBack }) {
   const { saveInvoice, fetchInvoiceById } = useInvoices()
+  const { savePdf } = useSavedPdfs({ load: false })
 
-  const [submitStatus,  setSubmitStatus]  = useState('idle') // idle | saving | generating | done | saved | error
+  const [submitStatus,  setSubmitStatus]  = useState('idle') // idle | saving | generating | done | saved | pdf-saved | error
   const [saveError,     setSaveError]     = useState('')
   const [detailLoading, setDetailLoading] = useState(() => !!initialData?.id)
   const [detailError,   setDetailError]   = useState('')
@@ -145,6 +147,14 @@ export function InvoiceForm({ initialData, profile, onBack }) {
       } else if (output === 'print') {
         openInvoicePdfForPrint(pdfParams())
         setSubmitStatus('saved')
+      } else if (output === 'save-pdf') {
+        setSubmitStatus('generating')
+        await savePdf({
+          kind: 'invoice', formId: saved.id,
+          title: header.childName || 'Unnamed child', period: header.billingMonth || '',
+          filename: invoicePdfFilename(header), blob: buildInvoicePdfDocument(pdfParams()).output('blob'),
+        })
+        setSubmitStatus('pdf-saved')
       } else {
         setSubmitStatus('saved')
       }
@@ -196,13 +206,17 @@ export function InvoiceForm({ initialData, profile, onBack }) {
           <span role="status" aria-live="polite" style={{ display: 'contents' }}>
             {submitStatus === 'done'  && <Badge color="green">✓ PDF Downloaded</Badge>}
             {submitStatus === 'saved' && <Badge color="green">✓ Saved</Badge>}
+            {submitStatus === 'pdf-saved' && <Badge color="green">✓ Added to Saved PDFs</Badge>}
             {submitStatus === 'error' && <Badge color="red">Save failed</Badge>}
           </span>
           <Button onClick={() => handleSave(storedStatus)} variant="secondary" size="sm" disabled={busy}>
             {storedStatus === 'submitted' ? 'Save' : 'Save Draft'}
           </Button>
-          <Button onClick={() => handleSave(storedStatus, 'download')} size="sm" disabled={busy}>
-            {submitStatus === 'generating' ? 'Generating…' : submitStatus === 'saving' ? 'Saving…' : '⬇ Download PDF'}
+          <Button onClick={() => handleSave(storedStatus, 'save-pdf')} size="sm" disabled={busy}>
+            {submitStatus === 'generating' ? 'Generating…' : submitStatus === 'saving' ? 'Saving…' : 'Save as PDF'}
+          </Button>
+          <Button onClick={() => handleSave(storedStatus, 'download')} variant="secondary" size="sm" disabled={busy}>
+            ⬇ Download PDF
           </Button>
           <Button onClick={() => handleSave(storedStatus, 'print')} variant="secondary" size="sm" disabled={busy}>
             Print PDF
@@ -367,6 +381,9 @@ export function InvoiceForm({ initialData, profile, onBack }) {
             }}
           >
             {busy ? '⏳ Processing…' : '⬇ Submit & Download Invoice PDF'}
+          </Button>
+          <Button onClick={() => handleSave(storedStatus, 'save-pdf')} variant="secondary" disabled={busy} style={{ padding: '14px 28px', fontSize: '15px' }}>
+            Save as PDF
           </Button>
           <Button onClick={() => handleSave(storedStatus, 'print')} variant="secondary" disabled={busy} style={{ padding: '14px 28px', fontSize: '15px' }}>
             Print Invoice
