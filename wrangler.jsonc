@@ -2,6 +2,8 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "early-steps",
   "compatibility_date": "2026-11-08",
+  // Serve only the main workers.dev URL; per-version preview URLs would be extra public copies of the site.
+  "preview_urls": false,
   // Static site only: no Worker script. `npm run build` writes the export to ./out.
   "assets": {
     "directory": "./out",
