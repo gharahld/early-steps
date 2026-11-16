@@ -23,6 +23,7 @@ export function useSoapNotes() {
   const saveNote = useCallback(async ({ id, note, therapist, signature }) => {
     const saved = upsertSoapNote(id, {
       child_name:  note.childName,
+      dob:         note.dob || null,
       date:        note.date || null,
       time_in:     note.timeIn || null,
       time_out:    note.timeOut || null,

@@ -17,7 +17,7 @@ export default function App() {
   }
 
   if (view === 'soap') {
-    return <SoapNoteForm key={selected?.id ?? 'new'} initialData={selected} profile={profile} onBack={back} />
+    return <SoapNoteForm key={selected?.id ?? 'new'} initialData={selected} profile={profile} onSaveProfile={saveProfile} onBack={back} />
   }
 
   return (

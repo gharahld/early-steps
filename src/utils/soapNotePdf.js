@@ -7,7 +7,9 @@ import { addImageContain, applyPrintSettings, newLetterDocument, openPdfInNewTab
  */
 const S = 0.1879
 const X = px => px * S
-const Y = py => (py + 37) * S
+// TOP pushes the whole form down to make room for the Name / D.O.B row above the titles.
+const TOP = 90
+const Y = py => (py + 37 + TOP) * S
 
 const PT_TO_MM = 25.4 / 72
 const BLACK = [0, 0, 0]
@@ -23,6 +25,10 @@ const VALUE_X = 250
 const LABEL_SIZE = 10.7
 const BODY_SIZE = 10
 const MIN_BODY_SIZE = 7
+// Name / D.O.B header row, drawn above the titles (as on the paper form).
+const HEAD_TOP = -62
+const HEAD_BOTTOM = -12
+const HEAD_COLS = [LEFT, 403, 741, RIGHT]
 
 function setFont(doc, style = 'normal', size = LABEL_SIZE, color = BLACK) {
   doc.setFont('helvetica', style)
@@ -79,6 +85,23 @@ function textBlock(doc, value, xPx, topPx, rightPx, bottomPx) {
   return lines.slice(fits)
 }
 
+function drawHeader(doc, note) {
+  doc.setDrawColor(...BLACK)
+  doc.setLineWidth(BORDER)
+  doc.rect(X(LEFT), Y(HEAD_TOP), (RIGHT - LEFT) * S, (HEAD_BOTTOM - HEAD_TOP) * S, 'S')
+  HEAD_COLS.slice(1, -1).forEach(x => doc.line(X(x), Y(HEAD_TOP), X(x), Y(HEAD_BOTTOM)))
+  const mid = (HEAD_TOP + HEAD_BOTTOM) / 2
+  const cell = (label, value, x, right) => {
+    setFont(doc, 'normal', LABEL_SIZE)
+    const maxW = (right - x - 24) * S
+    let str = `${label} ${value || ''}`
+    while (str.length > label.length + 1 && doc.getTextWidth(str) > maxW) str = str.slice(0, -1)
+    text(doc, str, x + 12, mid)
+  }
+  cell('Name:', note.childName, HEAD_COLS[0], HEAD_COLS[1])
+  cell('D.O.B:', formatDate(note.dob), HEAD_COLS[1], HEAD_COLS[2])
+}
+
 function drawForm(doc) {
   underlinedTitle(doc, 'Grounded Ventures, LLC', 40)
   underlinedTitle(doc, 'DAILY SOAP NOTE', 70)
@@ -131,7 +154,7 @@ export function soapNoteFilename(note) {
  * Build the Daily SOAP Note PDF.
  *
  * @param {{
- *   note: { date?: string, timeIn?: string, timeOut?: string, location?: string,
+ *   note: { childName?: string, dob?: string, date?: string, timeIn?: string, timeOut?: string, location?: string,
  *           subjective?: string, objective?: string, assessment?: string, plan?: string },
  *   therapist: { name?: string, title?: string, license?: string },
  *   signatureDataUrl?: string,
@@ -140,6 +163,7 @@ export function soapNoteFilename(note) {
  */
 export function buildSoapNotePdfDocument({ note, therapist, signatureDataUrl }) {
   const doc = newLetterDocument()
+  drawHeader(doc, note)
   drawForm(doc)
 
   text(doc, formatDate(note.date), LABEL_X, 232, { size: BODY_SIZE })

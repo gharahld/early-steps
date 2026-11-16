@@ -8,7 +8,7 @@ import { Button, Badge, T } from '../components/ui/index.jsx'
 const LOCATION_SUGGESTIONS = ['Home', 'Office', 'Daycare', 'Public Place', 'Telehealth']
 
 const EMPTY_NOTE = {
-  childName: '', date: '', timeIn: '', timeOut: '', location: '',
+  childName: '', dob: '', date: '', timeIn: '', timeOut: '', location: '',
   subjective: '', objective: '', assessment: '', plan: '',
 }
 
@@ -29,6 +29,7 @@ function Field({ label, hint, children }) {
 function noteFromStored(row) {
   return {
     childName:  row.child_name ?? '',
+    dob:        row.dob ?? '',
     date:       row.date ?? '',
     timeIn:     row.time_in ?? '',
     timeOut:    row.time_out ?? '',
@@ -40,7 +41,7 @@ function noteFromStored(row) {
   }
 }
 
-export function SoapNoteForm({ initialData, profile, onBack }) {
+export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
   const { saveNote, fetchNoteById } = useSoapNotes()
   const { savePdf } = useSavedPdfs({ load: false })
   const [note, setNote]           = useState(EMPTY_NOTE)
@@ -59,22 +60,27 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
         if (cancelled) return
         if (!row) { setError('This SOAP note could not be found on this device.'); return }
         setNote(noteFromStored(row))
-        setTherapist({ name: row.therapist_name ?? '', title: row.therapist_title ?? '', license: row.therapist_license ?? '' })
+        // Notes saved before a Provider Profile existed have no therapist — fill from the profile.
+        const stored = { name: row.therapist_name ?? '', title: row.therapist_title ?? '', license: row.therapist_license ?? '' }
+        setTherapist(stored.name || stored.title || stored.license ? stored : profile)
         setSignature(row.signature || null)
       })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [initialData?.id, fetchNoteById])
+  }, [initialData?.id, fetchNoteById]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field, value) => setNote(n => ({ ...n, [field]: value }))
   const pdfParams = () => ({ note, therapist, signatureDataUrl: signature })
-  const therapistLine = [therapist.name, therapist.title, therapist.license].filter(Boolean).join(' ')
+  const setT = (field, value) => setTherapist(t => ({ ...t, [field]: value }))
   /** Saves the note; returns its id, or null on failure. */
   const save = async () => {
     setError('')
     try {
       const saved = await saveNote({ id: noteId, note, therapist, signature })
       setNoteId(saved.id)
+      // First time the therapist is typed here: remember it so every new note fills it in.
+      const profileEmpty = !profile.name && !profile.title && !profile.license
+      if (profileEmpty && (therapist.name || therapist.title || therapist.license)) onSaveProfile?.(therapist)
       return saved.id
     } catch (err) {
       setError(err.message || 'Failed to save. Please try again.')
@@ -162,10 +168,14 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
               <div style={cardHead}><span style={secLabel}>Session</span></div>
               <div className="portal-patient-grid" style={{ padding: '22px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
                 <div className="portal-fi" style={{ gridColumn: 'span 3' }}>
-                  <Field label="Child" hint="For finding this note later — not printed on the SOAP note.">
+                  <Field label="Child">
                     {id => <input id={id} value={note.childName} onChange={e => set('childName', e.target.value)} placeholder="Child’s name" style={controlStyle} />}
                   </Field>
                 </div>
+                <Field label="D.O.B">
+                  {id => <input id={id} type="date" value={note.dob} onChange={e => set('dob', e.target.value)} style={controlStyle} />}
+                </Field>
+                <div className="portal-fi" style={{ gridColumn: 'span 2' }} />
                 <Field label="Date">
                   {id => <input id={id} type="date" value={note.date} onChange={e => set('date', e.target.value)} style={controlStyle} />}
                 </Field>
@@ -176,8 +186,21 @@ export function SoapNoteForm({ initialData, profile, onBack }) {
                   {id => <input id={id} type="time" value={note.timeOut} onChange={e => set('timeOut', e.target.value)} style={controlStyle} />}
                 </Field>
               </div>
-              <div style={{ padding: '12px 22px', borderTop: `1px solid ${T.border}`, fontSize: '12px', color: T.muted }}>
-                <strong style={{ color: T.text }}>Therapist / License #:</strong> {therapistLine || 'Not set — add your name, title and license in Provider Profile on the home screen.'}
+              <div style={{ padding: '16px 22px 20px', borderTop: `1px solid ${T.border}` }}>
+                <div className="portal-patient-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '14px' }}>
+                  <Field label="Therapist">
+                    {id => <input id={id} value={therapist.name} onChange={e => setT('name', e.target.value)} placeholder="e.g. Aleiah Bruno" style={controlStyle} />}
+                  </Field>
+                  <Field label="Title">
+                    {id => <input id={id} value={therapist.title} onChange={e => setT('title', e.target.value)} placeholder="e.g. PTA" style={controlStyle} />}
+                  </Field>
+                  <Field label="License #">
+                    {id => <input id={id} value={therapist.license} onChange={e => setT('license', e.target.value)} placeholder="e.g. 22266" style={controlStyle} />}
+                  </Field>
+                </div>
+                <p style={{ margin: '6px 0 0', fontSize: '11px', color: T.subtle }}>
+                  Filled in automatically from your Provider Profile on the home screen.
+                </p>
               </div>
             </div>
 
