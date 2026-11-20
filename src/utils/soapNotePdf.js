@@ -19,7 +19,8 @@ const BORDER = 0.35
 const LEFT = 65
 const SPLIT = 238
 const RIGHT = 1079
-const ROWS = [172, 298, 427, 587, 714, 873, 998]
+// Last row (998–1123) is the Caregiver Signature row added below the therapist signature.
+const ROWS = [172, 298, 427, 587, 714, 873, 998, 1123]
 const LABEL_X = 80
 const VALUE_X = 250
 const LABEL_SIZE = 10.7
@@ -121,6 +122,8 @@ function drawForm(doc) {
   text(doc, 'PLAN', LABEL_X, 733)
   text(doc, 'Therapist', LABEL_X, 892)
   text(doc, 'Signature:', LABEL_X, 917)
+  text(doc, 'Caregiver', LABEL_X, 1017)
+  text(doc, 'Signature:', LABEL_X, 1042)
 }
 
 function drawContinuation(doc, overflow) {
@@ -143,31 +146,23 @@ function drawContinuation(doc, overflow) {
   }
 }
 
-/** @param {{ date?: string, childName?: string }} note */
-export function soapNoteFilename(note) {
+/** @param {{ childName?: string }} note  @param {Array<{ date?: string }>} [pages] */
+export function soapNoteFilename(note, pages = []) {
   const safeName = (note.childName || 'Client').replace(/[^a-zA-Z0-9_-]/g, '_')
-  const safeDate = (note.date || 'NoDate').replace(/[^a-zA-Z0-9_-]/g, '_')
+  const safeDate = (pages[0]?.date || 'NoDate').replace(/[^a-zA-Z0-9_-]/g, '_')
   return `SOAP_Note_${safeName}_${safeDate}.pdf`
 }
 
 /**
- * Build the Daily SOAP Note PDF.
- *
- * @param {{
- *   note: { childName?: string, dob?: string, date?: string, timeIn?: string, timeOut?: string, location?: string,
- *           subjective?: string, objective?: string, assessment?: string, plan?: string },
- *   therapist: { name?: string, title?: string, license?: string },
- *   signatureDataUrl?: string,
- * }} params
- * @returns {import('jspdf').jsPDF}
+ * Draws one SOAP page (one session) starting on the current PDF page. Text that does not
+ * fit goes on continuation pages right after it.
  */
-export function buildSoapNotePdfDocument({ note, therapist, signatureDataUrl }) {
-  const doc = newLetterDocument()
+function drawSoapPage(doc, { note, page, therapist }) {
   drawHeader(doc, note)
   drawForm(doc)
 
-  text(doc, formatDate(note.date), LABEL_X, 232, { size: BODY_SIZE })
-  const times = [formatTime(note.timeIn), formatTime(note.timeOut)].filter(Boolean).join(' / ')
+  text(doc, formatDate(page.date), LABEL_X, 232, { size: BODY_SIZE })
+  const times = [formatTime(page.timeIn), formatTime(page.timeOut)].filter(Boolean).join(' / ')
   if (times) {
     setFont(doc, 'normal', LABEL_SIZE)
     const labelW = doc.getStringUnitWidth('TIME IN/OUT') * LABEL_SIZE * PT_TO_MM
@@ -176,33 +171,56 @@ export function buildSoapNotePdfDocument({ note, therapist, signatureDataUrl }) 
   const therapistId = [therapist.name, therapist.title, therapist.license].filter(Boolean).join(' ')
   text(doc, `Therapist / License #:   / ${therapistId}`, VALUE_X, 253)
 
-  if (note.location) {
+  if (page.location) {
     setFont(doc, 'bold', LABEL_SIZE)
     const labelW = doc.getStringUnitWidth('LOCATION:') * LABEL_SIZE * PT_TO_MM
-    text(doc, note.location, 257 + labelW / S + 12, 446, { size: BODY_SIZE })
+    text(doc, page.location, 257 + labelW / S + 12, 446, { size: BODY_SIZE })
   }
 
   const overflow = [
-    ['SUBJECTIVE', textBlock(doc, note.subjective, VALUE_X, ROWS[1] + 14, RIGHT - 15, ROWS[2] - 8)],
-    ['OBJECTIVE', textBlock(doc, note.objective, VALUE_X, 470, RIGHT - 15, ROWS[3] - 8)],
-    ['ASSESSMENT', textBlock(doc, note.assessment, VALUE_X, ROWS[3] + 14, RIGHT - 15, ROWS[4] - 8)],
-    ['PLAN', textBlock(doc, note.plan, VALUE_X, ROWS[4] + 14, RIGHT - 15, ROWS[5] - 8)],
+    ['SUBJECTIVE', textBlock(doc, page.subjective, VALUE_X, ROWS[1] + 14, RIGHT - 15, ROWS[2] - 8)],
+    ['OBJECTIVE', textBlock(doc, page.objective, VALUE_X, 470, RIGHT - 15, ROWS[3] - 8)],
+    ['ASSESSMENT', textBlock(doc, page.assessment, VALUE_X, ROWS[3] + 14, RIGHT - 15, ROWS[4] - 8)],
+    ['PLAN', textBlock(doc, page.plan, VALUE_X, ROWS[4] + 14, RIGHT - 15, ROWS[5] - 8)],
   ].filter(([, lines]) => lines.length)
 
-  addImageContain(doc, signatureDataUrl, X(VALUE_X), Y(ROWS[5] + 12), (RIGHT - VALUE_X - 300) * S, (ROWS[6] - ROWS[5] - 24) * S)
+  const sigW = (RIGHT - VALUE_X - 300) * S
+  addImageContain(doc, page.signature, X(VALUE_X), Y(ROWS[5] + 12), sigW, (ROWS[6] - ROWS[5] - 24) * S)
+  addImageContain(doc, page.caregiverSignature, X(VALUE_X), Y(ROWS[6] + 12), sigW, (ROWS[7] - ROWS[6] - 24) * S)
 
   if (overflow.length) drawContinuation(doc, overflow)
+}
 
-  applyPrintSettings(doc, `Daily SOAP Note — ${formatDate(note.date) || 'Undated'}`)
+/**
+ * Build the Daily SOAP Note PDF: one sheet per SOAP page, all sharing the child's
+ * Name / D.O.B and the therapist.
+ *
+ * @param {{
+ *   note: { childName?: string, dob?: string },
+ *   pages: Array<{ date?: string, timeIn?: string, timeOut?: string, location?: string,
+ *           subjective?: string, objective?: string, assessment?: string, plan?: string,
+ *           signature?: string, caregiverSignature?: string }>,
+ *   therapist: { name?: string, title?: string, license?: string },
+ * }} params
+ * @returns {import('jspdf').jsPDF}
+ */
+export function buildSoapNotePdfDocument({ note, pages, therapist }) {
+  const doc = newLetterDocument()
+  const list = pages?.length ? pages : [{}]
+  list.forEach((page, i) => {
+    if (i > 0) doc.addPage()
+    drawSoapPage(doc, { note, page, therapist })
+  })
+  applyPrintSettings(doc, `Daily SOAP Note — ${formatDate(list[0].date) || 'Undated'}`)
   return doc
 }
 
 /** @param {Parameters<typeof buildSoapNotePdfDocument>[0] & { note: { childName?: string } }} params */
 export function generateSoapNotePDF(params) {
-  buildSoapNotePdfDocument(params).save(soapNoteFilename(params.note))
+  buildSoapNotePdfDocument(params).save(soapNoteFilename(params.note, params.pages))
 }
 
 /** @param {Parameters<typeof buildSoapNotePdfDocument>[0]} params */
 export function openSoapNotePdfForPrint(params) {
-  openPdfInNewTab(buildSoapNotePdfDocument(params), soapNoteFilename(params.note))
+  openPdfInNewTab(buildSoapNotePdfDocument(params), soapNoteFilename(params.note, params.pages))
 }
