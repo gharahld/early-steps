@@ -20,22 +20,26 @@ export function useSoapNotes() {
 
   useEffect(() => { fetchNotes() }, [fetchNotes])
 
-  const saveNote = useCallback(async ({ id, note, therapist, signature }) => {
+  /** Saves the note. Page 1 is also kept in the top-level fields so the list and older code still work. */
+  const saveNote = useCallback(async ({ id, note, pages, therapist }) => {
+    const clean = pages.map(({ key, ...p }) => p) // eslint-disable-line no-unused-vars
+    const first = clean[0] ?? {}
     const saved = upsertSoapNote(id, {
       child_name:  note.childName,
       dob:         note.dob || null,
-      date:        note.date || null,
-      time_in:     note.timeIn || null,
-      time_out:    note.timeOut || null,
-      location:    note.location,
-      subjective:  note.subjective,
-      objective:   note.objective,
-      assessment:  note.assessment,
-      plan:        note.plan,
+      date:        first.date || null,
+      time_in:     first.timeIn || null,
+      time_out:    first.timeOut || null,
+      location:    first.location ?? '',
+      subjective:  first.subjective ?? '',
+      objective:   first.objective ?? '',
+      assessment:  first.assessment ?? '',
+      plan:        first.plan ?? '',
       therapist_name:    therapist.name,
       therapist_title:   therapist.title,
       therapist_license: therapist.license,
-      signature:   signature || null,
+      signature:   first.signature || null,
+      pages:       clean,
     })
     await fetchNotes()
     return saved

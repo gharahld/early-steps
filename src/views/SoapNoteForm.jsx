@@ -7,10 +7,17 @@ import { Button, Badge, T } from '../components/ui/index.jsx'
 
 const LOCATION_SUGGESTIONS = ['Home', 'Office', 'Daycare', 'Public Place', 'Telehealth']
 
-const EMPTY_NOTE = {
-  childName: '', dob: '', date: '', timeIn: '', timeOut: '', location: '',
+const EMPTY_NOTE = { childName: '', dob: '' }
+
+let pageKeySeq = 0
+/** One SOAP page = one session. `key` is only for React and is not saved. */
+const emptyPage = (fields = {}) => ({
+  key: `p${++pageKeySeq}`,
+  date: '', timeIn: '', timeOut: '', location: '',
   subjective: '', objective: '', assessment: '', plan: '',
-}
+  signature: null,
+  ...fields,
+})
 
 const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: T.muted, textTransform: 'uppercase', marginBottom: '5px' }
 const controlStyle = { width: '100%', padding: '8px 10px', border: `1.5px solid ${T.border}`, borderRadius: '6px', fontSize: '13px', color: T.text, background: '#fff', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }
@@ -27,9 +34,13 @@ function Field({ label, hint, children }) {
 }
 
 function noteFromStored(row) {
-  return {
-    childName:  row.child_name ?? '',
-    dob:        row.dob ?? '',
+  return { childName: row.child_name ?? '', dob: row.dob ?? '' }
+}
+
+/** Notes saved before multi-page support have a single page in their top-level fields. */
+function pagesFromStored(row) {
+  if (Array.isArray(row.pages) && row.pages.length) return row.pages.map(p => emptyPage(p))
+  return [emptyPage({
     date:       row.date ?? '',
     timeIn:     row.time_in ?? '',
     timeOut:    row.time_out ?? '',
@@ -38,7 +49,8 @@ function noteFromStored(row) {
     objective:  row.objective ?? '',
     assessment: row.assessment ?? '',
     plan:       row.plan ?? '',
-  }
+    signature:  row.signature || null,
+  })]
 }
 
 export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
@@ -46,7 +58,7 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
   const { savePdf } = useSavedPdfs({ load: false })
   const [note, setNote]           = useState(EMPTY_NOTE)
   const [therapist, setTherapist] = useState(profile)
-  const [signature, setSignature] = useState(null)
+  const [pages, setPages]         = useState(() => [emptyPage()])
   const [noteId, setNoteId]       = useState(initialData?.id ?? null)
   const [loading, setLoading]     = useState(() => !!initialData?.id)
   const [status, setStatus]       = useState('idle') // idle | saved | downloaded | error
@@ -63,20 +75,28 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
         // Notes saved before a Provider Profile existed have no therapist — fill from the profile.
         const stored = { name: row.therapist_name ?? '', title: row.therapist_title ?? '', license: row.therapist_license ?? '' }
         setTherapist(stored.name || stored.title || stored.license ? stored : profile)
-        setSignature(row.signature || null)
+        setPages(pagesFromStored(row))
       })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [initialData?.id, fetchNoteById]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field, value) => setNote(n => ({ ...n, [field]: value }))
-  const pdfParams = () => ({ note, therapist, signatureDataUrl: signature })
+  const setPage = (i, field, value) => setPages(ps => ps.map((p, j) => (j === i ? { ...p, [field]: value } : p)))
+  const addPage = () => setPages(ps => [...ps, emptyPage()])
+  const removePage = (i) => {
+    const p = pages[i]
+    const hasContent = ['date', 'timeIn', 'timeOut', 'location', 'subjective', 'objective', 'assessment', 'plan', 'signature'].some(f => p[f])
+    if (hasContent && !window.confirm(`Remove SOAP page ${i + 1}? What you typed on it will be lost.`)) return
+    setPages(ps => ps.filter((_, j) => j !== i))
+  }
+  const pdfParams = () => ({ note, pages, therapist })
   const setT = (field, value) => setTherapist(t => ({ ...t, [field]: value }))
   /** Saves the note; returns its id, or null on failure. */
   const save = async () => {
     setError('')
     try {
-      const saved = await saveNote({ id: noteId, note, therapist, signature })
+      const saved = await saveNote({ id: noteId, note, pages, therapist })
       setNoteId(saved.id)
       // First time the therapist is typed here: remember it so every new note fills it in.
       const profileEmpty = !profile.name && !profile.title && !profile.license
@@ -99,8 +119,8 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
     try {
       await savePdf({
         kind: 'soap', formId: id,
-        title: note.childName || 'Unnamed child', period: note.date || '',
-        filename: soapNoteFilename(note), blob: buildSoapNotePdfDocument(pdfParams()).output('blob'),
+        title: note.childName || 'Unnamed child', period: pages[0]?.date || '',
+        filename: soapNoteFilename(note, pages), blob: buildSoapNotePdfDocument(pdfParams()).output('blob'),
       })
       flash('pdf-saved')
     } catch (err) {
@@ -111,7 +131,7 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
 
   const handleDownload = async () => {
     if (!(await save())) return
-    buildSoapNotePdfDocument(pdfParams()).save(soapNoteFilename(note))
+    buildSoapNotePdfDocument(pdfParams()).save(soapNoteFilename(note, pages))
     flash('downloaded')
   }
 
@@ -125,11 +145,25 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
   const secLabel = { fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', color: '#475569', textTransform: 'uppercase' }
   const title = initialData ? `SOAP Note — ${initialData.child_name || initialData.date || 'Untitled'}` : 'New SOAP Note'
 
-  const textArea = (field, label, rows = 4) => (
+  const textArea = (i, field, label, rows = 4) => (
     <Field label={label}>
-      {id => <textarea id={id} rows={rows} value={note[field]} onChange={e => set(field, e.target.value)} style={{ ...controlStyle, resize: 'vertical', lineHeight: 1.5 }} />}
+      {id => <textarea id={id} rows={rows} value={pages[i][field]} onChange={e => setPage(i, field, e.target.value)} style={{ ...controlStyle, resize: 'vertical', lineHeight: 1.5 }} />}
     </Field>
   )
+
+  const signatureBlock = (i, field, label) => {
+    const labelId = `soap-${field}-${pages[i].key}`
+    const value = pages[i][field]
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '5px' }}>
+          <span id={labelId} style={{ ...labelStyle, marginBottom: 0 }}>{label}</span>
+          {value ? <Badge color="green">✓ Signed</Badge> : <Badge color="gray">Not signed</Badge>}
+        </div>
+        <SignaturePad value={value} onSigned={v => setPage(i, field, v)} onClear={() => setPage(i, field, null)} height={120} ariaLabelledby={labelId} />
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
@@ -165,25 +199,15 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
         ) : (
           <>
             <div style={card}>
-              <div style={cardHead}><span style={secLabel}>Session</span></div>
+              <div style={cardHead}><span style={secLabel}>Child &amp; Therapist</span></div>
               <div className="portal-patient-grid" style={{ padding: '22px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
-                <div className="portal-fi" style={{ gridColumn: 'span 3' }}>
+                <div className="portal-fi" style={{ gridColumn: 'span 2' }}>
                   <Field label="Child">
                     {id => <input id={id} value={note.childName} onChange={e => set('childName', e.target.value)} placeholder="Child’s name" style={controlStyle} />}
                   </Field>
                 </div>
                 <Field label="D.O.B">
                   {id => <input id={id} type="date" value={note.dob} onChange={e => set('dob', e.target.value)} style={controlStyle} />}
-                </Field>
-                <div className="portal-fi" style={{ gridColumn: 'span 2' }} />
-                <Field label="Date">
-                  {id => <input id={id} type="date" value={note.date} onChange={e => set('date', e.target.value)} style={controlStyle} />}
-                </Field>
-                <Field label="Time In">
-                  {id => <input id={id} type="time" value={note.timeIn} onChange={e => set('timeIn', e.target.value)} style={controlStyle} />}
-                </Field>
-                <Field label="Time Out">
-                  {id => <input id={id} type="time" value={note.timeOut} onChange={e => set('timeOut', e.target.value)} style={controlStyle} />}
                 </Field>
               </div>
               <div style={{ padding: '16px 22px 20px', borderTop: `1px solid ${T.border}` }}>
@@ -199,43 +223,50 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
                   </Field>
                 </div>
                 <p style={{ margin: '6px 0 0', fontSize: '11px', color: T.subtle }}>
-                  Filled in automatically from your Provider Profile on the home screen.
+                  Filled in automatically from your Provider Profile on the home screen. Name, D.O.B and therapist print on every SOAP page.
                 </p>
               </div>
             </div>
 
-            <div style={card}>
-              <div style={cardHead}><span style={secLabel}>SOAP</span></div>
-              <div style={{ padding: '22px', display: 'grid', gap: '16px' }}>
-                {textArea('subjective', 'Subjective')}
-                <Field label="Location">
-                  {id => (
-                    <>
-                      <input id={id} list="soap-location-options" value={note.location} onChange={e => set('location', e.target.value)} placeholder="e.g. Home" style={controlStyle} />
-                      <datalist id="soap-location-options">
-                        {LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}
-                      </datalist>
-                    </>
-                  )}
-                </Field>
-                {textArea('objective', 'Objective')}
-                {textArea('assessment', 'Assessment')}
-                {textArea('plan', 'Plan')}
-              </div>
-            </div>
+            <datalist id="soap-location-options">
+              {LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}
+            </datalist>
 
-            <div style={card}>
-              <div style={cardHead}>
-                <span style={secLabel}>Therapist Signature</span>
-                {signature ? <Badge color="green">✓ Signed</Badge> : <Badge color="gray">Not signed</Badge>}
+            {pages.map((page, i) => (
+              <div key={page.key} style={card}>
+                <div style={cardHead}>
+                  <span style={secLabel}>SOAP Page {i + 1}{pages.length > 1 ? ` of ${pages.length}` : ''}</span>
+                  {pages.length > 1 && <Button onClick={() => removePage(i)} variant="danger" size="sm">Remove page</Button>}
+                </div>
+                <div style={{ padding: '22px', display: 'grid', gap: '16px' }}>
+                  <div className="portal-patient-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
+                    <Field label="Date">
+                      {id => <input id={id} type="date" value={page.date} onChange={e => setPage(i, 'date', e.target.value)} style={controlStyle} />}
+                    </Field>
+                    <Field label="Time In">
+                      {id => <input id={id} type="time" value={page.timeIn} onChange={e => setPage(i, 'timeIn', e.target.value)} style={controlStyle} />}
+                    </Field>
+                    <Field label="Time Out">
+                      {id => <input id={id} type="time" value={page.timeOut} onChange={e => setPage(i, 'timeOut', e.target.value)} style={controlStyle} />}
+                    </Field>
+                  </div>
+                  {textArea(i, 'subjective', 'Subjective')}
+                  <Field label="Location">
+                    {id => <input id={id} list="soap-location-options" value={page.location} onChange={e => setPage(i, 'location', e.target.value)} placeholder="e.g. Home" style={controlStyle} />}
+                  </Field>
+                  {textArea(i, 'objective', 'Objective')}
+                  {textArea(i, 'assessment', 'Assessment')}
+                  {textArea(i, 'plan', 'Plan')}
+                  <p style={{ margin: 0, fontSize: '13px', color: T.muted, lineHeight: 1.55 }}>
+                    The signature is optional — leave it blank to sign the printed copy by hand. Any field you leave empty prints blank.
+                  </p>
+                  {signatureBlock(i, 'signature', 'Therapist Signature')}
+                </div>
               </div>
-              <div style={{ padding: '22px' }}>
-                <p style={{ margin: '0 0 14px', fontSize: '13px', color: T.muted, lineHeight: 1.55 }}>
-                  Optional — leave it blank to sign the printed copy by hand. Any field you leave empty prints blank.
-                </p>
-                <span id="soap-signature-label" style={labelStyle}>Therapist Signature</span>
-                <SignaturePad value={signature} onSigned={setSignature} onClear={() => setSignature(null)} height={140} ariaLabelledby="soap-signature-label" />
-              </div>
+            ))}
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+              <Button onClick={addPage} variant="secondary" style={{ padding: '12px 24px', fontSize: '14px' }}>+ Add another SOAP page</Button>
             </div>
 
             <div className="portal-invoice-footer" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', padding: '16px 0 32px' }}>
