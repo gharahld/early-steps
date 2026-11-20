@@ -15,7 +15,7 @@ const emptyPage = (fields = {}) => ({
   key: `p${++pageKeySeq}`,
   date: '', timeIn: '', timeOut: '', location: '',
   subjective: '', objective: '', assessment: '', plan: '',
-  signature: null, caregiverSignature: null,
+  signature: null,
   ...fields,
 })
 
@@ -86,7 +86,7 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
   const addPage = () => setPages(ps => [...ps, emptyPage()])
   const removePage = (i) => {
     const p = pages[i]
-    const hasContent = ['date', 'timeIn', 'timeOut', 'location', 'subjective', 'objective', 'assessment', 'plan', 'signature', 'caregiverSignature'].some(f => p[f])
+    const hasContent = ['date', 'timeIn', 'timeOut', 'location', 'subjective', 'objective', 'assessment', 'plan', 'signature'].some(f => p[f])
     if (hasContent && !window.confirm(`Remove SOAP page ${i + 1}? What you typed on it will be lost.`)) return
     setPages(ps => ps.filter((_, j) => j !== i))
   }
@@ -258,10 +258,9 @@ export function SoapNoteForm({ initialData, profile, onSaveProfile, onBack }) {
                   {textArea(i, 'assessment', 'Assessment')}
                   {textArea(i, 'plan', 'Plan')}
                   <p style={{ margin: 0, fontSize: '13px', color: T.muted, lineHeight: 1.55 }}>
-                    Signatures are optional — leave them blank to sign the printed copy by hand. Any field you leave empty prints blank.
+                    The signature is optional — leave it blank to sign the printed copy by hand. Any field you leave empty prints blank.
                   </p>
                   {signatureBlock(i, 'signature', 'Therapist Signature')}
-                  {signatureBlock(i, 'caregiverSignature', 'Caregiver Signature')}
                 </div>
               </div>
             ))}

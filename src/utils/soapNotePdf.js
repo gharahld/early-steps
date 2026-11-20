@@ -19,7 +19,7 @@ const BORDER = 0.35
 const LEFT = 65
 const SPLIT = 238
 const RIGHT = 1079
-// Last row (998–1123) is the Caregiver Signature row added below the therapist signature.
+// Last row (998–1123) is an empty, unlabeled row below the therapist signature.
 const ROWS = [172, 298, 427, 587, 714, 873, 998, 1123]
 const LABEL_X = 80
 const VALUE_X = 250
@@ -122,8 +122,6 @@ function drawForm(doc) {
   text(doc, 'PLAN', LABEL_X, 733)
   text(doc, 'Therapist', LABEL_X, 892)
   text(doc, 'Signature:', LABEL_X, 917)
-  text(doc, 'Caregiver', LABEL_X, 1017)
-  text(doc, 'Signature:', LABEL_X, 1042)
 }
 
 function drawContinuation(doc, overflow) {
@@ -186,7 +184,6 @@ function drawSoapPage(doc, { note, page, therapist }) {
 
   const sigW = (RIGHT - VALUE_X - 300) * S
   addImageContain(doc, page.signature, X(VALUE_X), Y(ROWS[5] + 12), sigW, (ROWS[6] - ROWS[5] - 24) * S)
-  addImageContain(doc, page.caregiverSignature, X(VALUE_X), Y(ROWS[6] + 12), sigW, (ROWS[7] - ROWS[6] - 24) * S)
 
   if (overflow.length) drawContinuation(doc, overflow)
 }
@@ -199,7 +196,7 @@ function drawSoapPage(doc, { note, page, therapist }) {
  *   note: { childName?: string, dob?: string },
  *   pages: Array<{ date?: string, timeIn?: string, timeOut?: string, location?: string,
  *           subjective?: string, objective?: string, assessment?: string, plan?: string,
- *           signature?: string, caregiverSignature?: string }>,
+ *           signature?: string }>,
  *   therapist: { name?: string, title?: string, license?: string },
  * }} params
  * @returns {import('jspdf').jsPDF}
